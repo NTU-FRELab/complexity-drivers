@@ -213,36 +213,6 @@ metrics_selected #See metrics retained from selection
 
 ## Comparison of complexity metrics (Latitudinal correlation) ##
 
-Regional comparison in complexity based on PERMANOVA.
-
-```{r PCA complexity}
-###################PERMANOVA based on metrics#########################
-library(vegan)
-metr_sel_std<-decostand(metrics_selected, 'standardize')
-region<-c('NC', 'NC', 'LY', 'NC', 'LD', 'LD', 'LY', 'KT', 'EC', 'LD', 'LD', 'KT', 'LY',
-       'EC', 'EC', 'KT', 'EC', 'EC', 'NC', 'KT', 'NC', 'LD', 'LY', 'KT', 'LY')
-
-#PERMANOVA on complexity
-metr_sel_euc<-vegdist(metr_sel_std, 'euclidean')
-
-metr_sel_region<-cbind(metr_sel_std, region)
-
-metr_sel_PERMANOVA<-adonis2(metr_sel_std~region, data=metr_sel_region,
-                            permutations = 9999, method='euclidean')
-
-metr_sel_PERMANOVA
-
-library(RVAideMemoire)
-library(devtools)
-library(pairwiseAdonis)
-#Pairwise permutation test
-permtest<-pairwise.adonis(as.data.frame(metr_sel_std), metr_sel_region$region,
-                          sim.method='euclidean', p.adjust.m = 'BH', perm=9999)
-
-permtest
-
-```
-
 
 Latitudinal correlation of each complexity metric.
 
@@ -467,25 +437,74 @@ Arrange1
 Arrange2<-ggarrange(plot_v4_lat+rremove("xlab"),
                     plot_PLC4_lat+rremove('xlab'),
                     plot_PLC16_lat+rremove('xlab'),
-                    plot_PLC32_lat+rremove('xlab'),
-                    plot_PROC32_lat+rremove('xlab'),
-                    plot_D816_lat+rremove('xlab'),
-                    plot_D1632_lat+rremove('xlab'),
-                    plot_D3264_lat+rremove('xlab'),
-                    plot_VRSD_lat+rremove('xlab'),
+                    
                     common.legend = T,
-                    ncol=3, nrow=3
+                    ncol=3, nrow=1
                     )
 Arrange2<-annotate_figure(Arrange2, 
                           bottom = textGrob("Latitude", gp = gpar(cex = 1.3)))
 
 Arrange2
 
+Arrange2_1<-ggarrange( 
+  plot_PLC32_lat+rremove('xlab'),
+  plot_PROC32_lat+rremove('xlab'),
+                    plot_D816_lat+rremove('xlab'),
+                    
+           common.legend = T,
+                    ncol=3, nrow=1
+           )
+Arrange2_1<-annotate_figure(Arrange2_1, 
+                          bottom = textGrob("Latitude", gp = gpar(cex = 1.3)))
+Arrange2_1
+
+Arrange2_2<-ggarrange( plot_D1632_lat+rremove('xlab'),
+                    plot_D3264_lat+rremove('xlab'),
+                    plot_VRSD_lat+rremove('xlab'),
+           common.legend = T,
+                    ncol=3, nrow=1
+           )
+Arrange2_2<-annotate_figure(Arrange2_2, 
+                          bottom = textGrob("Latitude", gp = gpar(cex = 1.3)))
+Arrange2_2
+
 
 
 ```
 
 ## Comparison of complexity metrics (Interregional differences) ##
+
+Regional comparison in complexity based on PERMANOVA.
+
+```{r PCA complexity}
+###################PERMANOVA based on metrics#########################
+library(vegan)
+metr_sel_std<-decostand(metrics_selected, 'standardize')
+region<-c('NC', 'NC', 'LY', 'NC', 'LD', 'LD', 'LY', 'KT', 'EC', 'LD', 'LD', 'KT', 'LY',
+       'EC', 'EC', 'KT', 'EC', 'EC', 'NC', 'KT', 'NC', 'LD', 'LY', 'KT', 'LY')
+
+#PERMANOVA on complexity
+metr_sel_euc<-vegdist(metr_sel_std, 'euclidean')
+
+metr_sel_region<-cbind(metr_sel_std, region)
+
+metr_sel_PERMANOVA<-adonis2(metr_sel_std~region, data=metr_sel_region,
+                            permutations = 9999, method='euclidean')
+
+metr_sel_PERMANOVA
+
+library(RVAideMemoire)
+library(devtools)
+library(pairwiseAdonis)
+#Pairwise permutation test
+permtest<-pairwise.adonis(as.data.frame(metr_sel_std), metr_sel_region$region,
+                          sim.method='euclidean', p.adjust.m = 'BH', perm=9999)
+
+permtest
+
+```
+
+
 
 Examining the disparity between regions by using nonparametric test.
 
@@ -539,11 +558,12 @@ library(ggpubr)
 box_V4_region<-ggplot(data=metrics_coordi, 
                       aes(x=region, y=V4 ))+
   geom_boxplot(aes(fill=region))+
- 
+ ggtitle(label =paste('KW chi-squared= ', round(V4_kruskal$statistic, 3)))+
   labs(y='VRM - 4 cm')+xlab('Region')+
   guides(fill = guide_legend(title = "Region"))+
   scale_fill_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))+
   stat_compare_means(label.y = 0.1, cex=5)
+
 
 
 #PROC32
@@ -686,16 +706,24 @@ Arrange3<-ggarrange(box_V4_region+rremove("xlab"),
                    box_PLC4_region+rremove('xlab'),
                     box_PLC16_region+rremove('xlab'),
                     box_PLC32_region+rremove('xlab'),
-                    box_D24_region+rremove('xlab'),
-                    box_D816_region+rremove('xlab'),
-                    box_D1632_region+rremove('xlab'),
-                    box_VRSD_region+rremove('xlab'),
+                    
                     common.legend = T,
-                    ncol=2, nrow=4
+                    ncol=2, nrow=2
                     )
 Arrange3<-annotate_figure(Arrange3, 
                           bottom = textGrob("Region", gp = gpar(cex = 1.3)))
 Arrange3
+
+Arrange3_1<-ggarrange(box_D24_region+rremove('xlab'),
+                    box_D816_region+rremove('xlab'),
+                    box_D1632_region+rremove('xlab'),
+                    box_VRSD_region+rremove('xlab'),
+                    common.legend = T,
+                    ncol=2, nrow=2
+                    )
+Arrange3_1<-annotate_figure(Arrange3_1, 
+                          bottom = textGrob("Region", gp = gpar(cex = 1.3)))
+Arrange3_1
 
 Arrange4<-ggarrange(box_D12_region+  rremove("xlab"),
   box_PROC32_region + rremove("xlab"),
