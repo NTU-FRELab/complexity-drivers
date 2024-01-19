@@ -1,0 +1,1928 @@
+---
+title: "Data_analysis_MengHsinMorrisWu"
+author: "Meng-Hsin, Wu"
+date: "2023-07-24"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+
+## Metric extraction (Fractal dimension) ##
+
+This code is used to compute fractal dimension of different scale intervals based on surface area and planar area extracted from QGIS.
+
+```{r FD computation, eval=F}
+rm(list=ls())
+setwd("~your working directory")
+SA.data<-data.frame()
+resolution<-c('The whole resolution', 1,2,4,8,16,32,64,128)
+#Copy and paste surface area of different resolutions (accessed by function r.surf.area in GDAL)
+SurfaceArea<-c( 'SA (whole Res)', 'SA (1 cm)', 'SA (2 cm)',
+               'SA (4 cm)',   'SA (8 cm)',
+                'SA (16 cm)',   'SA (32 cm)',
+                'SA (64 cm)',   'SA (128 cm)')
+#Copy and paste calculated planar area of different resolutions.
+PlanAreaCalc<-c( 'PAc (Whole Res)', 
+                 'PAc (1 cm)', 'PAc (2 cm)',
+                 'PAc (4 cm)', 'PAc (8 cm)',
+                 'PAc (16 cm)',  'PAc (32 cm)',
+                 'PAc (64 cm)', ' PAc (128 cm)')
+#Copy and paste null area (the true planar area is computed by subtracting calculated planar area from null area)
+NullArea<-c( 'NA (Whole Res)', 
+                 'NA (1 cm)', 'NA (2 cm)',
+                 'NA (4 cm)', 'NA (8 cm)',
+                 'NA (16 cm)',  'NA (32 cm)',
+                 'NA (64 cm)', ' NA (128 cm)')
+PlanArea<-PlanAreaCalc-NullArea #computing the true planar area
+SA.data<-data.frame(resolution=resolution, 
+           SurfaceArea=SurfaceArea, 
+           PlanArea=PlanArea)
+SA.data$SurfaceComplexity<-
+  SA.data$SurfaceArea/SA.data$PlanArea
+SA.data$LogSA<-log(SurfaceArea)
+SA.data$LogRES<-log(resolution/100)
+lmSA64<-lm(LogSA[2:8]~LogRES[2:8], data=SA.data) 
+FD64<-2-lmSA64_2$coefficients[2] # Get D (1 - 64 cm)
+library(ggplot2)
+#Visualization of D (1 - 64 cm)
+FD64Plot<-ggplot(SA.data[1:8, ], aes(x=LogRES, 
+                                     y=LogSA))+
+  geom_point()+
+  geom_smooth(method='lm')+
+  xlab('log(Resolution)')+
+  ylab('log(Surface Area)')+
+  ggtitle(paste('name of sampling site', 'D64= ', FD64_2))
+
+####################################
+#Get FD at different scale intervals
+slopes<-c()
+FD_intervals<-c()
+for(i in 2:7){
+  slopes[i-1]<-(SA.data$LogSA[i+1]-SA.data$LogSA[i])/(SA.data$LogRES[i+1]-SA.data$LogRES[i])
+}
+FD_intervals= 2-slopes
+intervals<-c('D1_2','D2_4', 'D4_8', 'D8_16', 'D16_32', 'D32_64')
+FDs<-data.frame(interv= intervals, FDs= FD_intervals)
+```
+
+
+## 3D model quality ##
+
+
+Showing the reprojection error, ground resolution, and control error of each model.
+
+```{r 3D model quality}
+########################################################################
+rm(list=ls())
+library(readxl)
+mod_qual<-read_xlsx('Data/model_quality.xlsx')
+mod_qual<-as.data.frame(mod_qual)
+row.names(mod_qual)<-mod_qual[,1]
+mod_qual<-mod_qual[,-1]
+
+mod_qual$Reproj_Error_mm<-mod_qual$Res_mm*mod_qual$Reproj_Error
+
+#Showing resolutions, reprojection error (both in pixel and mm), and planar area of each quadrat.
+head(mod_qual)
+
+```
+
+```{r compute ranges}
+
+#Showing the ranges of parameters
+mod_qual_sum<-data.frame()
+
+for(i in 1:ncol(mod_qual)){
+  mod_qual_sum[1,i]<-min(mod_qual[,i])+(max(mod_qual[,i])-min(mod_qual[,i]))/2
+  mod_qual_sum[2,i]<-(max(mod_qual[,i])-min(mod_qual[,i]))/2
+  mod_qual_sum[3,i]<-mean(mod_qual[,i])
+}
+colnames(mod_qual_sum)<-colnames(mod_qual)
+
+row.names(mod_qual_sum)<-c('Intermediate', 'HalfRange', 'Mean')
+
+#Showing the ranges
+round(mod_qual_sum, 2)
+
+
+```
+
+
+
+
+
+
+## Import complexity metrics ##
+
+The metrics were collected by using QGIS. Fractal dimension (D) was computed by data extracted by QGIS and the code provided at **section 1**. All metrics of each site were manually organized in a table.
+
+```{r metrics selection, message= F}
+
+
+library(corrplot)
+library(car)
+library(readxl)
+library(olsrr)
+
+raw_metrics<-read.csv('Data/complexity_metrics.csv')#read the table with all metrics
+row.names(raw_metrics)<-raw_metrics$X
+metrics<-raw_metrics[,-c(1,26)]
+head(metrics)
+
+```
+
+
+## Import composition data ##
+
+Benthic cover of each group was accessed by computing the proportion of area each group accounts in each plot.
+
+```{r import composition, message=F}
+
+library(dplyr)
+composition_substrates<-read.csv('Data/composition_substrates.csv')
+#composition_substrates[,1]<-NULL
+row.names(composition_substrates)<-composition_substrates$site
+#remove tws
+composition_substrates$tws<-NULL
+
+#Remove OI
+composition_substrates$other<-NULL
+
+head(composition_substrates)
+
+```
+
+
+## Correlation between complexity metrics ##
+
+Emamining the correlation between complexity metrics.
+
+```{r correlation plot, message=F}
+#####################Correlation between metrics################################
+metrics_cor<-cor(metrics) #Get correlation matrix composed of every metric pair.
+
+###Corrplot adjustment
+metrics_pub<-metrics
+colnames(metrics_pub)<-c('S - 4 cm', 'TRI - 4 cm', 'VRM - 4cm', 'S - 32 cm',
+                         'TRI - 32 cm', 'VRM - 32 cm', 'PROC - 4 cm', 'PLC - 4 cm',
+                         'PROC - 32 cm', 'PLC - 32 cm', 'S - 16 cm', 'TRI - 16 cm',
+                         'VRM - 16 cm', 'PROC - 16 cm', 'PLC - 16 cm', 'D (1 - 64 cm)',
+                         'SC', 'D (1 - 2 cm)', 'D (2 - 4 cm)', 'D (4 - 8 cm)', 'D (8 - 16 cm)',
+                         'D (16 - 32 cm)', 'D (32 - 64 cm)', 'Sq')
+metrics_cor<-cor(metrics_pub)
+#corrplot(metrics_cor, method='number',
+#         type='lower')
+res<-cor.mtest(metrics_cor, 
+               conf.level = .95)
+#########################Displaying Corrplot#############################
+
+corrplot(metrics_cor, method='number',
+         type='lower', p.mat = res$p,
+         sig.level = .05, tl.cex=0.5, cl.cex=0.5,
+         number.cex=0.5)
+
+
+
+#######################################################
+```
+
+
+## Use VIF to remove collinearity ##
+
+Removing complexity metrics greatly contributing to collinearity by using variance inflation factor (VIF).
+
+```{r VIF for complexity, message=F}
+###############Use usdm for stepwise VIF selection on metrics##################################
+library(usdm)
+v1<-vifstep(metrics, th=10)
+metrics_selected<-exclude(metrics, v1)
+metrics_selected #See metrics retained from selection
+####################################################################################
+
+```
+
+
+## Comparison of complexity metrics (Latitudinal correlation) ##
+
+Regional comparison in complexity based on PERMANOVA.
+
+```{r PCA complexity}
+###################PERMANOVA based on metrics#########################
+library(vegan)
+metr_sel_std<-decostand(metrics_selected, 'standardize')
+region<-c('NC', 'NC', 'LY', 'NC', 'LD', 'LD', 'LY', 'KT', 'EC', 'LD', 'LD', 'KT', 'LY',
+       'EC', 'EC', 'KT', 'EC', 'EC', 'NC', 'KT', 'NC', 'LD', 'LY', 'KT', 'LY')
+
+#PERMANOVA on complexity
+metr_sel_euc<-vegdist(metr_sel_std, 'euclidean')
+
+metr_sel_region<-cbind(metr_sel_std, region)
+
+metr_sel_PERMANOVA<-adonis2(metr_sel_std~region, data=metr_sel_region,
+                            permutations = 9999, method='euclidean')
+
+metr_sel_PERMANOVA
+
+library(RVAideMemoire)
+library(devtools)
+library(pairwiseAdonis)
+#Pairwise permutation test
+permtest<-pairwise.adonis(as.data.frame(metr_sel_std), metr_sel_region$region,
+                          sim.method='euclidean', p.adjust.m = 'BH', perm=9999)
+
+permtest
+
+```
+
+
+Latitudinal correlation of each complexity metric.
+
+```{r latitudinal comparison}
+##Latitudinal correlation of metrics###
+library(readxl)
+#Import latitudes of sites
+coordi<-read_xlsx('Data/coordinates.xlsx') 
+coordi<-as.data.frame(coordi)
+#coordi<-coordi[,-4]
+row.names(coordi)<-coordi[,1]
+#Merge latitudes and metrics
+metrics_coordi<-merge(metrics, coordi,
+                      by='row.names')
+row.names(metrics_coordi)<-metrics_coordi[,1]
+metrics_coordi<-metrics_coordi[-1]
+
+metrics_coordi<-merge(metrics_coordi, as.data.frame(raw_metrics[26]),
+                      by='row.names')
+metrics_coordi$region<-factor(metrics_coordi$region,
+                              levels=c('KT','LY','LD',
+                                       'EC','NC'),
+                              ordered = T)
+```
+
+
+
+```{r lat_comparison, message=F}
+#V4
+cor_v4_lat<-cor.test(metrics_coordi$Lat, metrics_coordi$V4, method='pearson',
+         conf.level = 0.95)
+
+#Plot the relationship with latitudes
+library(ggplot2)
+plot_v4_lat<-ggplot(data=metrics_coordi, aes(x=Lat, y=V4))+
+  geom_point(aes(col=region))+
+  geom_smooth(method='lm')+
+  annotate('text', x=22.5, y=0.037, size=5,label=paste('p = ',round(cor_v4_lat$p.value, 3)))+
+  annotate('text', x=22.5, y=0.043, size=5,label=paste('r = ',round(cor_v4_lat$estimate, 3)))+
+  xlab('Latitudes')+ ylab('VRM - 4 cm')+
+  guides(color = guide_legend(title = "Region"))+
+  scale_color_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))
+
+
+#PROC32
+cor_PROC32_lat<-cor.test(metrics_coordi$Lat, metrics_coordi$PROC32, method='pearson',
+                      conf.level = 0.95)
+
+#Plot the relationship with latitudes
+plot_PROC32_lat<-ggplot(data=metrics_coordi, aes(x=Lat, y=PROC32))+
+  geom_point(aes(col=region))+
+  geom_smooth(method='lm')+
+  annotate('text', x=24.5, y=0.135, size=5, label=paste('p = ',round(cor_PROC32_lat$p.value, 3)))+
+  annotate('text', x=24.5, y=0.175, size=5, label=paste('r = ',round(cor_PROC32_lat$estimate, 3)))+
+  xlab('Latitudes')+ ylab('PROC - 32 cm')+
+  guides(color = guide_legend(title = "Region"))+
+  scale_color_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))
+
+
+#PLC4
+cor_PLC4_lat<-cor.test(metrics_coordi$Lat, metrics_coordi$PLC4, method='pearson',
+                      conf.level = 0.95)
+
+#Plot the relationship
+plot_PLC4_lat<-ggplot(data=metrics_coordi, aes(x=Lat, y=PLC4))+
+  geom_point(aes(col=region))+
+  geom_smooth(method='lm')+
+  annotate('text', x=22.5, y=3, size=5,label=paste('p = ',round(cor_PLC4_lat$p.value, 3)))+
+  annotate('text', x=22.5, y=5, size=5, label=paste('r = ',round(cor_PLC4_lat$estimate, 3)))+
+  xlab('Latitudes')+ ylab('PLC - 4 cm')+
+  guides(color = guide_legend(title = "Region"))+
+  scale_color_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))
+
+
+
+
+#PLC16
+cor_PLC16_lat<-cor.test(metrics_coordi$Lat, metrics_coordi$PLC16, method='pearson',
+                     conf.level = 0.95)
+
+#Plot relationship
+plot_PLC16_lat<-ggplot(data=metrics_coordi, aes(x=Lat, y=PLC16))+
+  geom_point(aes(col=region))+
+  geom_smooth(method='lm')+
+  annotate('text', x=22.5, y=2.9,size=5, label=paste('p = ',round(cor_PLC16_lat$p.value, 3)))+
+  annotate('text', x=22.5, y=3.2, size=5,label=paste('r = ',round(cor_PLC16_lat$estimate, 3)))+
+  xlab('Latitudes')+ ylab('PLC - 16 cm')+
+  guides(color = guide_legend(title = "Region"))+
+  scale_color_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))
+
+
+#PLC32
+cor_PLC32_lat<-cor.test(metrics_coordi$Lat, metrics_coordi$PLC32, method='pearson',
+                                              conf.level = 0.95)
+
+#no significant correlation btw sc and latitude
+plot_PLC32_lat<-ggplot(data=metrics_coordi, aes(x=Lat, y=PLC32))+
+  geom_point(aes(col=region))+
+  geom_smooth(method='lm')+
+  annotate('text', x=22.6, y=1, size=5,label=paste('p = ',round(cor_PLC32_lat$p.value, 3)))+
+  annotate('text', x=22.6, y=1.2, size=5,label=paste('r = ',round(cor_PLC32_lat$estimate, 3)))+
+  xlab('Latitudes')+ ylab('PLC - 32 cm')+
+  guides(color = guide_legend(title = "Region"))+
+  scale_color_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))
+
+
+#D12
+
+cor_D12_lat<-cor.test(metrics_coordi$Lat, metrics_coordi$D1_2, method='pearson',
+                     conf.level = 0.95)
+
+#Plot relationship
+plot_D12_lat<-ggplot(data=metrics_coordi, aes(x=Lat, y=D1_2))+
+  geom_point(aes(col=region))+
+  geom_smooth(method='lm')+
+  annotate('text', x=22.5, y=2.07,size=6.5, label=paste('p = ',round(cor_D12_lat$p.value, 3)))+
+  annotate('text', x=22.5, y=2.085, size=6.5,label=paste('r = ',round(cor_D12_lat$estimate, 3)))+
+  xlab('Latitudes')+ ylab('D (1 - 2 cm)')+
+  guides(color = guide_legend(title = "Region"))+
+  scale_color_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))
+
+
+
+
+#D24
+cor_D24_lat<-cor.test(metrics_coordi$Lat, metrics_coordi$D2_4, method='pearson',
+                        conf.level = 0.95)
+
+#Plot relationship
+plot_D24_lat<-ggplot(data=metrics_coordi, aes(x=Lat, y=D2_4))+
+  geom_point(aes(col=region))+
+  geom_smooth(method='lm')+
+  annotate('text', x=22.5, y=2.07, size=6.5, label=paste('p = ',round(cor_D24_lat$p.value, 3)))+
+  annotate('text', x=22.5, y=2.085, size=6.5, label=paste('r = ',round(cor_D24_lat$estimate, 3)))+
+  xlab('Latitudes')+ ylab('D (2 - 4 cm)')+
+  guides(color = guide_legend(title = "Region"))+
+  scale_color_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))
+
+
+
+#D816
+
+cor_D816_lat<-cor.test(metrics_coordi$Lat, metrics_coordi$D8_16, method='pearson',
+                      conf.level = 0.95)
+
+#Plot relationship
+plot_D816_lat<-ggplot(data=metrics_coordi, aes(x=Lat, y=D8_16))+
+  geom_point(aes(col=region))+
+  geom_smooth(method='lm')+
+  annotate('text', x=23, y=2.057, size=5,label=paste('p = ',round(cor_D816_lat$p.value, 3)))+
+  annotate('text', x=23, y=2.07, size=5,label=paste('r = ',round(cor_D816_lat$estimate, 3)))+
+  xlab('Latitudes')+ ylab('D (8 - 16 cm)')+
+  guides(color = guide_legend(title = "Region"))+
+  scale_color_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))
+
+
+#D1632
+cor_D1632_lat<-cor.test(metrics_coordi$Lat, metrics_coordi$D16_32, method='pearson',
+                      conf.level = 0.95)
+
+
+#Plot relationship
+plot_D1632_lat<-ggplot(data=metrics_coordi, aes(x=Lat, y=D16_32))+
+  geom_point(aes(col=region))+
+  geom_smooth(method='lm')+
+  annotate('text', x=23, y=2.02,size=5, label=paste('p = ',round(cor_D1632_lat$p.value, 3)))+
+  annotate('text', x=23, y=2.04, size=5,label=paste('r = ',round(cor_D1632_lat$estimate, 3)))+
+  xlab('Latitudes')+ ylab('D (16 - 32 cm)')+
+  guides(color = guide_legend(title = "Region"))+
+  scale_color_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))
+
+
+
+#D3264
+cor_D3264_lat<-cor.test(metrics_coordi$Lat, metrics_coordi$D32_64, method='pearson',
+                      conf.level = 0.95)
+
+#Plot relationship
+plot_D3264_lat<-ggplot(data=metrics_coordi, aes(x=Lat, y=D32_64))+
+  geom_point(aes(col=region))+
+  geom_smooth(method='lm')+
+  annotate('text', x=23, y=2.07, size=5,label=paste('p = ',round(cor_D3264_lat$p.value, 3)))+
+  annotate('text', x=23, y=2.09, size=5,label=paste('r = ',round(cor_D3264_lat$estimate, 3)))+
+  xlab('Latitudes')+ ylab('D (32 - 64 cm)')+
+  guides(color = guide_legend(title = "Region"))+
+  scale_color_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))
+
+
+
+#Sq
+
+cor_VRSD_lat<-cor.test(metrics_coordi$Lat, metrics_coordi$VRSD4, method='pearson',
+                       conf.level = 0.95)
+
+#Plot relationship
+plot_VRSD_lat<-ggplot(data=metrics_coordi, aes(x=Lat, y=VRSD4))+
+  geom_point(aes(col=region))+
+  geom_smooth(method='lm')+
+  annotate('text', x=23.5, y=0.15, size=5,label=paste('p = ',round(cor_VRSD_lat$p.value, 3)))+
+  annotate('text', x=23.5, y=0.18, size=5,label=paste('r = ',round(cor_VRSD_lat$estimate, 3)))+
+  labs(y='Sq')+xlab('Latitudes')+
+  guides(color = guide_legend(title = "Region"))+
+  scale_color_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))
+
+library(ggpubr)
+library(grid)
+
+Arrange1<-ggarrange(plot_D12_lat + rremove("xlab"),
+                    plot_D24_lat + rremove("xlab"), 
+                  legend = 'none',
+                    ncol=2, nrow=1,
+                    labels=c('a.', 'b.'),
+                  hjust=0.05,
+        
+                  font.label=list(face='bold', size= 30)
+                  )
+Arrange1<-annotate_figure(Arrange1, 
+                bottom = textGrob(expression(bold(underline("Latitude"))), gp = gpar(cex = 2)))
+
+Arrange1
+
+Arrange2<-ggarrange(plot_v4_lat+rremove("xlab"),
+                    plot_PLC4_lat+rremove('xlab'),
+                    plot_PLC16_lat+rremove('xlab'),
+                    plot_PLC32_lat+rremove('xlab'),
+                    plot_PROC32_lat+rremove('xlab'),
+                    plot_D816_lat+rremove('xlab'),
+                    plot_D1632_lat+rremove('xlab'),
+                    plot_D3264_lat+rremove('xlab'),
+                    plot_VRSD_lat+rremove('xlab'),
+                    common.legend = T,
+                    ncol=3, nrow=3
+                    )
+Arrange2<-annotate_figure(Arrange2, 
+                          bottom = textGrob("Latitude", gp = gpar(cex = 1.3)))
+
+Arrange2
+
+
+
+```
+
+## Comparison of complexity metrics (Interregional differences) ##
+
+Examining the disparity between regions by using nonparametric test.
+
+
+```{r interregional comparison, message=F, warning=F}
+
+##########################Interregional comparisons: Kruskal Wallis test##############################
+
+
+V4_kruskal<-kruskal.test(V4~region, data=metrics_coordi)
+V32_kruskal<-kruskal.test(V32~region, data=metrics_coordi)
+PROC32_kruskal<-kruskal.test(PROC32~region, data=metrics_coordi)
+PLC4_kruskal<-kruskal.test(PLC4~region, data=metrics_coordi)
+PLC16_kruskal<-kruskal.test(PLC16~region, data=metrics_coordi)
+PLC32_kruskal<-kruskal.test(PLC32~region, data=metrics_coordi)
+D12_kruskal<-kruskal.test(D1_2~region, data=metrics_coordi)
+D24_kruskal<-kruskal.test(D2_4~region, data=metrics_coordi)
+D48_kruskal<-kruskal.test(D4_8~region, data=metrics_coordi)
+D816_kruskal<-kruskal.test(D8_16~region, data=metrics_coordi)
+D1632_kruskal<-kruskal.test(D16_32~region, data=metrics_coordi)
+D3264_kruskal<-kruskal.test(D32_64~region, data=metrics_coordi)
+VRSD_kruskal<-kruskal.test(VRSD4~region, data=metrics_coordi)
+
+######################Pairwise Dunn test########################################
+library(PMCMRplus)
+PROC32_DT<-kwAllPairsDunnTest(PROC32~region, data=metrics_coordi, method='bh')
+#Significance at EC-LY, EC-NC
+D3264_DT<-kwAllPairsDunnTest(D32_64~region, data=metrics_coordi, method="bh")
+#Significance may exist at EC-LY
+D12_DT<-kwAllPairsDunnTest(D1_2~region, data=metrics_coordi, method="bh")
+#Significance at LY-NC, KT-NC
+
+#Show significant pairs
+library(rcompanion)
+library(rempsyc)
+PROC32_DT<-PMCMRTable(PROC32_DT)
+D3264_DT<-PMCMRTable(D3264_DT)
+D12_DT<-PMCMRTable(D12_DT)
+DT_sum<-cbind(D12_DT, D3264_DT, PROC32_DT)
+DT_sum[c(3,5)]<-NULL
+colnames(DT_sum)[2:4]<-c('p.value of D (1 - 2 cm) cm', 'p.value of D (32 - 64 cm)', 'p.value of PROC - 32 cm')
+
+DT_NT<-nice_table(DT_sum)
+DT_NT
+#flextable::save_as_docx(DT_NT, path = "Figures/PairwiseComparison_indicators_Dunn.docx")
+
+
+####Plot relationships between regions###
+library(ggpubr)
+#V4
+box_V4_region<-ggplot(data=metrics_coordi, 
+                      aes(x=region, y=V4 ))+
+  geom_boxplot(aes(fill=region))+
+ 
+  labs(y='VRM - 4 cm')+xlab('Region')+
+  guides(fill = guide_legend(title = "Region"))+
+  scale_fill_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))+
+  stat_compare_means(label.y = 0.1, cex=5)
+
+
+#PROC32
+
+box_PROC32_region<-ggplot(data=metrics_coordi, 
+                       aes(x=region, y=PROC32 ))+
+  geom_boxplot(aes(fill=region))+
+  ggtitle(label = paste('KW chi-squared= ', round(PROC32_kruskal$statistic, 3)))+
+  labs(y='PROC - 32 cm')+xlab('Region')+
+  guides(fill = guide_legend(title = "Region"))+
+  scale_fill_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))
+
+
+box_PROC32_region<-box_PROC32_region+
+  stat_compare_means(label.y = 0.17, cex=5)+ # Add global p-value
+  annotate('text', x=1:5, y=0.75, label=c('ns', '*', 'ns', '', '*'), 
+           cex=5) 
+
+
+#PLC4
+
+box_PLC4_region<-ggplot(data=metrics_coordi, 
+                         aes(x=region, y=PLC4 ))+
+  geom_boxplot(aes(fill=region))+
+  ggtitle(label =paste('KW chi-squared= ', round(PLC4_kruskal$statistic, 3)))+
+  labs(y='PLC - 4 cm')+xlab('Region')+
+  guides(fill = guide_legend(title = "Region"))+
+  scale_fill_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))+
+  stat_compare_means(label.y = 21, cex=5)
+
+
+#PLC16
+box_PLC16_region<-ggplot(data=metrics_coordi, 
+                      aes(x=region, y=PLC16 ))+
+  geom_boxplot(aes(fill=region))+
+  ggtitle(label =paste('KW chi-squared= ', round(PLC16_kruskal$statistic, 3)))+
+  labs(y='PLC - 16 cm')+xlab('Region')+
+  guides(fill = guide_legend(title = "Region"))+
+  scale_fill_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))+
+  stat_compare_means(label.y = 5.5, cex=5)
+
+
+#PLC32
+box_PLC32_region<-ggplot(data=metrics_coordi, 
+                      aes(x=region, y=PLC32 ))+
+  geom_boxplot(aes(fill=region))+
+  ggtitle(label =paste('KW chi-squared= ', round(PLC32_kruskal$statistic, 3)))+
+  labs(y='PLC - 32 cm')+xlab('Region')+
+  guides(fill = guide_legend(title = "Region"))+
+  scale_fill_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))+
+  stat_compare_means(label.y =3.15, cex=4)
+
+
+
+#D12
+box_D12_region<-ggplot(data=metrics_coordi, 
+                      aes(x=region, y=D1_2 ))+
+  geom_boxplot(aes(fill=region))+
+  ggtitle(label =paste('KW chi-squared= ', round(D12_kruskal$statistic, 3)))+
+  labs(y='D(1 - 2 cm)')+xlab('Region')+
+  guides(fill = guide_legend(title = "Region"))+
+  scale_fill_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))
+
+
+box_D12_region<-box_D12_region+
+  stat_compare_means(label.y = 2.32, cex=5)+ # Add global p-value
+  annotate('text', x=1:5, y=2.28, label=c('ns', '*', 'ns','ns',''), 
+           cex=5)
+
+
+
+#D24
+
+box_D24_region<-ggplot(data=metrics_coordi, 
+                       aes(x=region, y=D2_4 ))+
+  geom_boxplot(aes(fill=region))+
+  ggtitle(label =paste('KW chi-squared= ', round(D24_kruskal$statistic, 3)))+
+  labs(y='D(2 - 4 cm) cm')+xlab('Region')+
+  guides(fill = guide_legend(title = "Region"))+
+  scale_fill_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))+
+  stat_compare_means(label.y = 2.06, cex=5)
+
+
+
+
+#D816
+box_D816_region<-ggplot(data=metrics_coordi, 
+                       aes(x=region, y=D8_16 ))+
+  geom_boxplot(aes(fill=region))+
+  ggtitle(label =paste('KW chi-squared= ', round(PLC4_kruskal$statistic, 3)))+
+  labs(y='D(8 - 16 cm)')+xlab('Region')+
+  guides(fill = guide_legend(title = "Region"))+
+  scale_fill_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))+
+  stat_compare_means(label.y = 2.19, cex=5)
+
+
+
+#D1632
+box_D1632_region<-ggplot(data=metrics_coordi, 
+                        aes(x=region, y=D16_32 ))+
+  geom_boxplot(aes(fill=region))+
+  ggtitle(label =paste('KW chi-squared= ', round(PLC4_kruskal$statistic, 3)))+
+  labs(y='D(16 - 32 cm)')+xlab('Region')+
+  guides(fill = guide_legend(title = "Region"))+
+  scale_fill_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))+
+  stat_compare_means(label.y = 2.23, cex=5)
+
+
+
+#D3264
+box_D3264_region<-ggplot(data=metrics_coordi, 
+                         aes(x=region, y=D32_64 ))+
+  geom_boxplot(aes(fill=region))+
+  ggtitle(label =paste('KW chi-squared= ', round(PLC4_kruskal$statistic, 3)))+
+  labs(y='D(32 - 64 cm)')+xlab('Region')+
+  guides(fill = guide_legend(title = "Region"))+
+  scale_fill_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))
+
+box_D3264_region<-box_D3264_region+
+  stat_compare_means(label.y = 2.4, cex=5)+ # Add global p-value
+  # Pairwise comparison against reference
+  annotate('text', x=1:5, y=2.36, label=c('ns', 'ns', 'ns', '', 'ns'),
+           cex=5)
+
+
+#Sq
+box_VRSD_region<-ggplot(data=metrics_coordi, 
+                         aes(x=region, y=VRSD4 ))+
+  geom_boxplot(aes(fill=region))+
+  ggtitle(label =paste('KW chi-squared= ', round(PLC4_kruskal$statistic, 3)))+
+  labs(y='Sq')+xlab('Region')+
+  guides(fill = guide_legend(title = "Region"))+
+  scale_fill_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))
+
+box_VRSD_region<-box_VRSD_region+
+  stat_compare_means(label.y = 0.65, cex=5)
+  
+
+Arrange3<-ggarrange(box_V4_region+rremove("xlab"),
+                   box_PLC4_region+rremove('xlab'),
+                    box_PLC16_region+rremove('xlab'),
+                    box_PLC32_region+rremove('xlab'),
+                    box_D24_region+rremove('xlab'),
+                    box_D816_region+rremove('xlab'),
+                    box_D1632_region+rremove('xlab'),
+                    box_VRSD_region+rremove('xlab'),
+                    common.legend = T,
+                    ncol=2, nrow=4
+                    )
+Arrange3<-annotate_figure(Arrange3, 
+                          bottom = textGrob("Region", gp = gpar(cex = 1.3)))
+Arrange3
+
+Arrange4<-ggarrange(box_D12_region+  rremove("xlab"),
+  box_PROC32_region + rremove("xlab"),
+                    box_D3264_region + rremove("xlab"),
+                    common.legend=T, legend = 'none',
+                    ncol=3, nrow=1, 
+                    labels=c('c.', 'd.', 'e.'),
+  font.label=list(face='bold', size= 30)
+)
+Arrange4
+```
+
+
+## PCA based on benthic composition ##
+
+Applying principle component analysis to display relationships between sites in benthic composition.
+
+
+```{r PCA composition}
+
+##Combine metrics with composition
+#Import metrics
+comp_sub_metrics<-merge(composition_substrates, metrics, by='row.names')
+row.names(comp_sub_metrics)<-comp_sub_metrics$Row.names
+comp_sub_metrics<-comp_sub_metrics[,-1]
+#Change colnames
+indicators<-c('S - 4 cm', 'TRI - 4 cm', 'VRM - 4 cm', 
+              'S - 32 cm', 'TRI - 32 cm', 'VRM - 32 cm', 
+              'PROC - 4 cm', 'PLC - 4 cm', 'PROC - 32 cm',
+              'PLC - 32 cm', 'S - 16 cm', 'TRI - 16 cm', 'VRM - 16 cm',
+              'PROC - 16 cm', 'PLC - 16 cm', 'D(1 - 64 cm)', 'SC',
+              'D (1 - 2 cm)', 'D (2 - 4 cm)', 'D (4 - 8 cm)', 
+              'D(8 - 16 cm)', 'D(16 - 32 cm)', 'D(32 - 64 cm)',
+              'Sq')
+colnames(comp_sub_metrics)[31:54]<-indicators
+
+
+#####################PCA for composition#########################################
+##############set color###########################
+
+library(fishualize)
+library(devtools)
+#devtools::install_github("nschiett/fishualize", force = TRUE)
+my_cols<-c("#15e0fa", "#fc0f00","#fec700",  "#fb7200" ,"#0c59fe" )
+
+##########################tb-PCA (hellinger transformed)###########################################
+comp_sub_hel<-decostand(composition_substrates[,3:30], method='hellinger')
+comp_sub_hel<-decostand(comp_sub_hel, method='standardize')
+colnames(comp_sub_hel)<-c('AN', 'Arborescent HC',
+                          'Bushy HC', 'Columnar HC', 'Encrusting HC',
+                          'Foliose HC', 'Massive HC', 'Tabular HC', 'Digitate OC',
+                          'Lobate OC', 'Massive OC','TU', 'Bushy OC',
+                          'AS','Fan-shaped OC', 'Encrusting ZO',
+                          'Globular SP', 'Massive SP','Massive ZO',
+                          'Clustered OC','Encrusting OC', 'Repent SP',
+                          'Papillate SP', 'CO', 'CCA',
+                          'BSS', 'MA', 'US')
+groups<-composition_substrates$region
+comp_sub_RDA<-rda(comp_sub_hel)
+RDA_summary<-summary(comp_sub_RDA)
+
+
+#Visualization of PCA
+ordiplot(comp_sub_RDA, type='n',
+         display=c('site', 'sp'),
+         scaling=3,
+         xlab=paste('PC1, ', 
+                    round(RDA_summary$cont$importance[2,1]*100, 2), '%'),
+         ylab=paste('PC2, ',round(RDA_summary$cont$importance[2,2]*100, 2), '%'),
+        )
+title(sub='Benthic composition based on sites (hellinger transformed)')
+ordihull(comp_sub_RDA, 
+         groups=groups,
+         draw='polygon', 
+         scaling=3,
+         col=my_cols,
+         border=NA,
+         alpha=0.5)
+groups2<-groups
+groups2<-as.factor(groups2)
+levels(groups2)<-my_cols
+groups2<-as.vector(groups2)
+points(comp_sub_RDA, display='site',
+       scaling=3,
+       col=groups2,
+       pch=20, cex=1.5)
+vct.scores<-scores(comp_sub_RDA, 
+                   choices=1:2, 
+                   display='sp',
+                   scaling=3)
+text(vct.scores[1,1],vct.scores[1,2],
+     row.names(vct.scores)[1],
+     col='black', cex=0.8)#actinia
+text(vct.scores[2,1],vct.scores[2,2]+0.02,
+     row.names(vct.scores)[2],
+     col='black', cex=0.8)#arborescent HC
+text(vct.scores[3,1],vct.scores[3,2],
+     row.names(vct.scores)[3],
+     col='black', cex=0.8) #Bushy HC
+text(vct.scores[4,1],vct.scores[4,2]+0.01,
+     row.names(vct.scores)[4],
+     col='black', cex=0.8) #columnar HC
+text(vct.scores[5,1],vct.scores[5,2],
+     row.names(vct.scores)[5],
+     col='black', cex=0.8) #encrusting HC
+text(vct.scores[6,1],vct.scores[6,2],
+     row.names(vct.scores)[6],
+     col='black', cex=0.8) #foliose HC
+text(vct.scores[7,1],vct.scores[7,2],
+     row.names(vct.scores)[7],
+     col='black', cex=0.8) #massive HC
+text(vct.scores[8,1],vct.scores[8,2]-0.015,
+     row.names(vct.scores)[8],
+     col='black', cex=0.8) #tabular HC
+text(vct.scores[9,1],vct.scores[9,2],
+     row.names(vct.scores)[9],
+     col='black', cex=0.8) #digitate HC
+text(vct.scores[10,1],vct.scores[10,2],
+     row.names(vct.scores)[10],
+     col='black', cex=0.8) #lobate OC
+text(vct.scores[11,1],vct.scores[11,2]-0.02,
+     row.names(vct.scores)[11],
+     col='black', cex=0.8) #massive OC
+text(vct.scores[12,1],vct.scores[12,2],
+     row.names(vct.scores)[12],
+     col='black', cex=0.8) #filamentous algae
+text(vct.scores[13,1],vct.scores[13,2]+0.01,
+     row.names(vct.scores)[13],
+     col='black', cex=0.8) #bushy OC
+text(vct.scores[14,1],vct.scores[14,2]-0.05,
+     row.names(vct.scores)[14],
+     col='black', cex=0.8)#ascidian
+text(vct.scores[15,1],vct.scores[15,2],
+     row.names(vct.scores)[15],
+     col='black', cex=0.8) #fan OC
+text(vct.scores[16,1],vct.scores[16,2],
+     row.names(vct.scores)[16],
+     col='black', cex=0.8) #zoenc
+text(vct.scores[17,1],vct.scores[17,2],
+     row.names(vct.scores)[17],
+     col='black', cex=0.8) #globular sponges
+text(vct.scores[18,1],vct.scores[18,2],
+     row.names(vct.scores)[18],
+     col='black', cex=0.8)#spomas
+text(vct.scores[19,1],vct.scores[19,2],
+     row.names(vct.scores)[19],
+     col='black', cex=0.8)#zoamas
+text(vct.scores[20,1],vct.scores[20,2],
+     row.names(vct.scores)[20],
+     col='black', cex=0.8) #occlu
+text(vct.scores[21,1],vct.scores[21,2],
+     row.names(vct.scores)[21],
+     col='black', cex=0.8) #ocenc
+text(vct.scores[22,1],vct.scores[22,2]-0.025,
+     row.names(vct.scores)[22],
+     col='black', cex=0.8) #Repent SP
+text(vct.scores[23,1],vct.scores[23,2]-0.02,
+     row.names(vct.scores)[23],
+     col='black', cex=0.8) #papillate sponges
+text(vct.scores[24,1],vct.scores[24,2],
+     row.names(vct.scores)[24],
+     col='black', cex=0.8)# CO
+text(vct.scores[25,1]-0.145,vct.scores[25,2]-0.02,
+     row.names(vct.scores)[25],
+     col='black', cex=0.8) #CCA
+text(vct.scores[26,1],vct.scores[26,2],
+     row.names(vct.scores)[26],
+     col='black', cex=0.7) #BSS
+text(vct.scores[27,1],vct.scores[27,2],
+     row.names(vct.scores)[27],
+     col='black', cex=0.7)#MA
+text(vct.scores[28,1],vct.scores[28,2],
+     row.names(vct.scores)[28],
+     col='black', cex=0.8) #US
+
+
+vct.scores1<-scores(comp_sub_RDA, 
+                                choices=1:2, 
+                                display='site',
+                                scaling=3)
+
+legend('topleft', fill=my_cols,
+       legend= c('East Coast','Kenting', 'Ludao', 'Lanyu', 'North Coast'), 
+       title='Region', cex=1.2)
+
+```
+
+## Initial selection on benthic categories (sparsity + cross-validation) ##
+
+Using leave-one-out cross validation to select benthic groups strongly connecting to each complexity metric.
+
+```{r glmnet, message=F}
+library(glmnet)
+filter <- function(x, ...) which(colMeans(x == 0) > 0.5)
+sparsity <- function(fraction = 0.7) {
+  function(x, ...) which(colMeans(x == 0) > fraction)
+}
+#V4
+cv_V4<-cv.glmnet(y=comp_sub_metrics$`VRM - 4 cm`, 
+                 x=as.matrix(sqrt(comp_sub_metrics[,3:30])),
+                 exclude=sparsity(0.5),
+                 family=gaussian(),
+                 nfolds=25)
+
+coef(cv_V4, s='lambda.min')
+V4_coef<-as.data.frame(as.matrix(coef(cv_V4, s='lambda.min')))
+#PROC32
+cv_PROC32<-cv.glmnet(y=comp_sub_metrics$`PROC - 32 cm`, 
+                     x=as.matrix(sqrt(comp_sub_metrics[,3:30])),
+                     exclude=sparsity(0.5),
+                     family=Gamma('log'),
+                     nfolds=25)
+
+coef(cv_PROC32, s='lambda.min')
+PROC32_coef<-as.data.frame(as.matrix(coef(cv_PROC32, s='lambda.min')))
+#PLC4
+cv_PLC4<-cv.glmnet(y=comp_sub_metrics$`PLC - 4 cm`, 
+                   x=as.matrix(sqrt(comp_sub_metrics[,3:30])),
+                   exclude=sparsity(0.5),
+                   family=gaussian(),
+                   nfolds=25)
+
+coef(cv_PLC4, s='lambda.min')
+PLC4_coef<-as.data.frame(as.matrix(coef(cv_PLC4, s='lambda.min')))
+#PLC16
+cv_PLC16<-cv.glmnet(y=comp_sub_metrics$`PLC - 16 cm`, 
+                    x=as.matrix(sqrt(comp_sub_metrics[,3:30])),
+                    exclude=sparsity(0.5),
+                    family=Gamma('log'),
+                    nfolds=25)
+
+coef(cv_PLC16, s='lambda.min')
+PLC16_coef<-as.data.frame(as.matrix(coef(cv_PLC16, s='lambda.min')))
+#PLC32
+cv_PLC32<-cv.glmnet(y=comp_sub_metrics$`PLC - 32 cm`, 
+                    x=as.matrix(sqrt(comp_sub_metrics[,3:30])),
+                    exclude=sparsity(0.5),
+                    family=gaussian(),
+                    nfolds=25)
+
+coef(cv_PLC32, s='lambda.min')
+PLC32_coef<-as.data.frame(as.matrix(coef(cv_PLC32, s='lambda.min')))
+#D12
+cv_D12<-cv.glmnet(y=comp_sub_metrics$`D (1 - 2 cm)`, 
+                  x=as.matrix(sqrt(comp_sub_metrics[,3:30])),
+                  exclude=sparsity(0.5),
+                  family=Gamma('log'),
+                  nfolds=25)
+
+coef(cv_D12, s='lambda.min')
+D12_coef<-as.data.frame(as.matrix(coef(cv_D12, s='lambda.min')))
+#D24
+cv_D24<-cv.glmnet(y=comp_sub_metrics$`D (2 - 4 cm)`, 
+                  x=as.matrix(comp_sub_metrics[,3:30]),
+                  exclude=sparsity(0.5),
+                  family=Gamma('log'),
+                  nfolds=25)
+
+coef(cv_D24, s='lambda.min')
+D24_coef<-as.data.frame(as.matrix(coef(cv_D24, s='lambda.min')))
+#D816
+cv_D816<-cv.glmnet(y=comp_sub_metrics$`D(8 - 16 cm)`, 
+                   x=as.matrix(comp_sub_metrics[,3:30]),
+                   exclude=sparsity(0.5),
+                   family=Gamma('log'),
+                   nfolds=25)
+
+coef(cv_D816, s='lambda.min')
+D816_coef<-as.data.frame(as.matrix(coef(cv_D816, s='lambda.min')))
+#D1632
+cv_D1632<-cv.glmnet(y=comp_sub_metrics$`D(16 - 32 cm)`, 
+                    x=as.matrix(comp_sub_metrics[,3:30]),
+                    exclude=sparsity(0.5),
+                    family=gaussian(),
+                    nfolds=25)
+
+coef(cv_D1632, s='lambda.min')
+D1632_coef<-as.data.frame(as.matrix(coef(cv_D1632, s='lambda.min')))
+#D3264
+cv_D3264<-cv.glmnet(y=comp_sub_metrics$`D(32 - 64 cm)`, 
+                    x=as.matrix(comp_sub_metrics[,3:30]),
+                    exclude=sparsity(0.5),
+                    family=gaussian(),
+                    nfolds=25)
+
+coef(cv_D3264, s='lambda.min')
+D3264_coef<-as.data.frame(as.matrix(coef(cv_D3264, s='lambda.min')))
+#Sq
+cv_VRSD<-cv.glmnet(y=comp_sub_metrics$Sq, 
+                   x=as.matrix(comp_sub_metrics[,3:30]),
+                   exclude=sparsity(0.5),
+                   family=gaussian(),
+                   nfolds=25)
+coef(cv_VRSD, s='lambda.min')
+Sq_coef<-as.data.frame(as.matrix(coef(cv_VRSD, s='lambda.min')))
+```
+
+```{r show cv plots}
+#Show all plots
+par(mfrow=c(2,3))
+plot(cv_V4)
+title('VRM - 4 cm', line= 3)
+plot(cv_PLC4)
+title('PLC - 4 cm', line = 3)
+plot(cv_D12)
+title('D (1 - 2 cm)', line = 3)
+plot(cv_D24)
+title('D (2 - 4 cm)', line = 3)
+plot(cv_PLC16)
+title('PLC - 16 cm', line = 3)
+plot(cv_D816)
+title('D (8 - 16 cm)', line = 3)
+
+par(mfrow=c(2,3))
+plot(cv_D1632)
+title('D (16 - 32 cm)', line = 3)
+plot(cv_PROC32)
+title('PROC - 32 cm', line = 3)
+plot(cv_PLC32)
+title('PLC - 32 cm', line = 3)
+plot(cv_D3264)
+title('D (32 - 64 cm)', line = 3)
+plot(cv_VRSD)
+title('Sq', line = 3)
+```
+
+```{r show models with lowest cv error}
+###Show all coefficients
+cv_coef<-cbind(V4_coef, PLC4_coef, D12_coef, D24_coef,
+      PLC16_coef, D816_coef, D1632_coef,
+      PROC32_coef, PLC32_coef, D3264_coef, 
+      Sq_coef)
+colnames(cv_coef)<-c('VRM - 4 cm', 'PLC - 4 cm', 'D (1 - 2 cm)',
+'D (2 - 4 cm)', 'PLC - 16 cm', 'D (8 - 16 cm)', 'D (16 - 32 cm)',
+'PROC - 32 cm', 'PLC - 32 cm', 'D (32 - 64 cm)', 'Sq'     )
+row.names(cv_coef)<-c('Intercept', 'AN', 'Arborescent HC',
+                      'Bushy HC', 'Columnar HC', 'Encrusting HC', 'Foliose HC', 
+                      'Massive HC', 'Tabular HC', 'Digitate OC', 'Lobate OC', 
+                      'Massive OC', 'TU', 'Bushy OC', 
+                      'AS', 'Fan OC', 'Encrusting zoanthid', 'Globular SP',
+                      'Massive SP', 'Massive ZO', 'Clustered OC', 'Encrusting OC',
+                      'Repent SP', 'Papillate SP', 'CO', 'CCA', 
+                      'BSS', 'MA', 'US')
+cv_coef<-cv_coef[c(1,4,5,7,8,9,11,12,15,16,19,22,28, 29:31 ),]
+categories_retained<-row.names(cv_coef)
+cv_coef<-cbind(categories_retained,cv_coef)
+colnames(cv_coef)[1]<-'Category'
+head(cv_coef)
+
+
+
+
+```
+
+## Second selection (stepwise VIF) and RDA ##
+
+Using stepwise VIF selection for the second selection on benthic categories.
+
+Using hellinger-transformed composition to explain standardized complexity. Using permutation test to reveal significance. Using variance partitioning analysis to reveal the importance of each category.
+
+```{r tb-RDA}
+par(mfrow=c(1,1))
+library(dplyr)
+
+comp_sub_hel_std<-decostand(comp_sub_hel, 'standardize')
+MetricsRDA_table<-dplyr::select(comp_sub_hel_std,`Arborescent HC`, `Bushy HC`, `Encrusting HC`,
+                                `Foliose HC`, `Massive HC`,
+                         `Encrusting ZO`,`Massive ZO`, 
+                         `Lobate OC`, `Digitate OC`,`Bushy OC`, `TU`, `MA`, 
+                         `CCA`,`BSS`, `US`
+)
+metrics_std<-decostand(metrics[,c(3,8,9,10,15,18,19,21,22,23,24)], 'standardize')
+rda_table<- merge(MetricsRDA_table, metrics_std, by='row.names')
+row.names(rda_table)<-rda_table$Row.names
+groups<-c('NC', 'NC', 'LY', 'NC', 'LD', 'LD', 'LY', 'KT', 'EC', 'LD', 'LD',
+          'KT', 'LY', 'EC', 'EC', 'KT', 'EC', 'EC', 'NC', 'KT', 'NC', 'LD',
+          'LY', 'KT', 'LY')
+rda_table<-rda_table[,-1]
+rda_mod<-rda(rda_table[,c(16:26)]~., data=rda_table[,1:15])
+rda_mod_summary<-summary(rda_mod)
+vif.cca(rda_mod)
+##remove BSS
+
+#Rebuild RDA again
+MetricsRDA_table<-dplyr::select(comp_sub_hel_std,`Arborescent HC`, `Bushy HC`, `Encrusting HC`,
+                                `Foliose HC`, `Massive HC`,
+                                `Encrusting ZO`,`Massive ZO`, 
+                                `Lobate OC`, `Digitate OC`,`Bushy OC`, `TU`, `MA`, 
+                                `CCA`, `US`
+)
+metrics_std<-decostand(metrics[,c(3,8,9,10,15,18,19,21,22,23,24)], 'standardize')
+rda_table<- merge(MetricsRDA_table, metrics_std, by='row.names')
+row.names(rda_table)<-rda_table$Row.names
+groups<-c('NC', 'NC', 'LY', 'NC', 'LD', 'LD', 'LY', 'KT', 'EC', 'LD', 'LD',
+          'KT', 'LY', 'EC', 'EC', 'KT', 'EC', 'EC', 'NC', 'KT', 'NC', 'LD',
+          'LY', 'KT', 'LY')
+groups2<-as.factor(groups)
+levels(groups2)<-my_cols
+rda_table<-rda_table[,-1]
+rda_mod<-rda(rda_table[,c(15:25)]~., data=rda_table[,1:14])
+rda_mod_summary<-summary(rda_mod)
+vif.cca(rda_mod) #All VIF <10
+##Visualization
+#Show R^2
+RsquareAdj(rda_mod)
+#Show biplot of RDA
+ordiplot(rda_mod,type='n',
+         scaling=3,,
+         xlab=paste('RDA1, ', 
+                    round(rda_mod_summary$concont$importance[2,1]*100, 2), '%'),
+         ylab=paste('RDA2, ',round(rda_mod_summary$concont$importance[2,2]*100, 2), '%'),
+         xlim=c(-1,1),
+         cex=0.8)
+title(
+      sub='Variables selected by stepwise removing variables with VIF > 10')
+
+rda_sc<-scores(rda_mod,choice=1:2,
+               display='sp',
+               scaling=2)
+
+
+arrows(x0=0, y0=0,
+       x1=rda_sc[,1],
+       y1=rda_sc[,2],
+       length=0,
+       lty=1,
+       lwd=1.5,
+       col=rgb(1,0,0,0.7))
+rda_sc1<-scores(rda_mod,choice=1:2,
+               display='site',
+               scaling=3)
+
+points(x=rda_sc1[,1], y=rda_sc1[,2], pch=20, cex=1.5,
+       col=as.vector(groups2))
+
+ordihull(rda_mod, 
+         groups= groups,
+         draw='polygon',
+         scaling=3,
+         alpha=0.4,
+         
+         col=my_cols,
+         border = NA)
+rda_sc2<-scores(rda_mod,choice=1:2,
+                scaling=2,
+                display = 'bp')
+row.names(rda_sc2)<-c('Arborescent HC', 'Bushy HC', 'Encrusting HC',
+                      'Foliose HC', 'Massive HC',
+                       'Encrusting ZO','Massive ZO', 
+                       'Lobate OC', 'Digitate OC','Bushy OC', 'TU', 
+                      'MA','CCA', 'US')
+
+
+text(x=rda_sc2[1,1]+0.07,
+     y=rda_sc2[1,2],
+     row.names(rda_sc2)[1],
+     cex=0.7,
+     col='black')
+text(x=rda_sc2[2,1],
+     y=rda_sc2[2,2]+0.03,
+     'Bushy  HC',
+     cex=0.8,
+     col='black')
+text(x=rda_sc2[3,1]-0.1,
+     y=rda_sc2[3,2],
+     row.names(rda_sc2)[3],
+     cex=0.8,
+     col='black')
+text(x=rda_sc2[4,1],
+     y=rda_sc2[4,2],
+     row.names(rda_sc2)[4],
+     cex=0.8,
+     col='black')
+text(x=rda_sc2[5,1]-0.03,
+     y=rda_sc2[5,2]-0.02,
+    'Massive  HC',
+     cex=0.8,
+     col='black')
+text(x=rda_sc2[6,1]-0.035,
+     y=rda_sc2[6,2],
+     row.names(rda_sc2)[6],
+     cex=0.75,
+     col='black')
+text(x=rda_sc2[7,1],
+     y=rda_sc2[7,2]-0.02,
+     row.names(rda_sc2)[7],
+     cex=0.75,
+     col='black')
+text(x=rda_sc2[8,1],
+     y=rda_sc2[8,2],
+     row.names(rda_sc2)[8],
+     cex=0.8,
+     col='black')
+text(x=rda_sc2[9,1]-0.01,
+     y=rda_sc2[9,2]-0.02,
+     row.names(rda_sc2)[9],
+     cex=0.8,
+     col='black')
+text(x=rda_sc2[10,1]-0.05,
+     y=rda_sc2[10,2],
+     'Bushy OC',
+     cex=0.8,
+     col='black')
+text(x=rda_sc2[11,1],
+     y=rda_sc2[11,2],
+     'TU',
+     cex=0.75,
+     col='black')
+
+text(x=rda_sc2[12,1]-0.12,
+     y=rda_sc2[12,2],
+     row.names(rda_sc2)[12],
+     cex=0.75,
+     col='black')
+text(x=rda_sc2[13,1],
+     y=rda_sc2[13,2],
+     row.names(rda_sc2)[13],
+     cex=0.8,
+     col='black')
+text(x=rda_sc2[14,1],
+     y=rda_sc2[14,2],
+     row.names(rda_sc2)[14],
+     cex=0.8,
+     col='black')
+text(x=rda_sc[1,1]+0.3,
+     y=rda_sc[1,2]+0.05,
+     'VRM - 4 cm',
+     cex=0.9,
+     col='black')
+text(x=rda_sc[2,1]-0.1,
+     y=rda_sc[2,2]+0.25,
+     'PLC - 4 cm',
+     cex=0.9,
+     col='black')
+text(x=rda_sc[3,1]+0.45,
+     y=rda_sc[3,2]-0.1,
+     'PROC - 32 cm',
+     cex=0.9,
+     col='black')
+text(x=rda_sc[4,1]+0.45,
+     y=rda_sc[4,2]-0.2,
+     'PLC - 32 cm',
+     cex=0.8,
+     col='black')
+text(x=rda_sc[5,1]-0.4,
+     y=rda_sc[5,2]-0.04,
+     'PLC - 16 cm',
+     cex=0.9,
+     col='black')
+text(x=rda_sc[6,1]+0.18,
+     y=rda_sc[6,2]+0.2,
+     'D (1 - 2 cm)',
+     cex=0.9,
+     col='black')
+text(x=rda_sc[7,1]+0.15,
+     y=rda_sc[7,2]+0.2,
+     'D (2 - 4 cm)',
+     cex=0.9,
+     col='black')
+
+text(x=rda_sc[8,1]+0.37,
+     y=rda_sc[8,2]+0.05,
+     'D (8 - 16 cm)',
+     cex=0.9,
+     col='black')
+text(x=rda_sc[9,1]+0.5,
+     y=rda_sc[9,2]-0.21,
+     'D (16 - 32 cm)',
+     cex=0.9,
+     col='black')
+text(x=rda_sc[10,1]+0.4,
+     y=rda_sc[10,2]-0.31,
+     'D (32 - 64 cm)',
+     cex=0.9,
+     col='black')
+text(x=rda_sc[11,1]+0.20,
+     y=rda_sc[11,2]-0.15,
+     'Sq',
+     cex=0.9,
+     col='black')
+legend('topright', fill=my_cols,
+       legend= c('East Coast','Kenting', 'Ludao', 'Lanyu', 'North Coast'), 
+       title='Region',
+       cex=1.2)
+#Show summary of the constrained model
+rda_mod_summary 
+
+#Show the scores of RDA1 and RDA2
+rda_scores<-as.data.frame(rda_sc2)
+rda_scores<-round(rda_scores, 3)
+rda_scores$Groups<-row.names(rda_scores)
+rda_scores<-dplyr::select(rda_scores, Groups, RDA1, RDA2)
+library(gt)
+rda_scores_gt<-gt(rda_scores)
+rda_scores_gt
+###############Check significance of RDA model##############
+#Check the significance by axis
+rda_aov<-anova.cca(rda_mod, by='axis',
+                   permutations = how(nperm=5000))
+rda_aov
+#Significance at RDA1
+
+
+#Check significance of the whole constrained model
+rda_aov_all<-anova.cca(rda_mod,permutations = how(nperm=5000)) #Show overall significance
+rda_aov_all
+
+#Significantly tells the variation
+
+
+```
+
+```{r Varpart}
+######################Variance partitioning###################################
+
+varpart_plot<-varpart(rda_table[,c(15:25)],
+                      X=rda_table[,1],
+                      rda_table[,2],
+                      rda_table[,3],
+                      rda_table[,4])
+
+varpart_table<-varpart_plot$part$fract[1:4,]
+row.names(varpart_table)<-c('Arborescent HC','Bushy HC', 'Encrusting HC', 'Foliose HC' )
+varpart_table<-round(varpart_table, 3)
+varpart_plot<-varpart(rda_table[,c(15:25)],
+                      X=rda_table[,5],
+                      rda_table[,6],
+                      rda_table[,7],
+                      rda_table[,8])
+
+varpart_table2<-varpart_plot$part$fract[1:4,]
+row.names(varpart_table2)<-c('Massive HC','Encrusting ZO', 'Massive ZO', 'Lobate OC' )
+varpart_table2<-round(varpart_table2, 3)
+varpart_plot<-varpart(rda_table[,c(15:25)],
+                      X=rda_table[,9],
+                      rda_table[,10],
+                      rda_table[,11],
+                      rda_table[,12])
+
+varpart_table3<-varpart_plot$part$fract[1:4,]
+row.names(varpart_table3)<-c('Digitate OC','Bushy OC', 'TU', 'MA' )
+varpart_table3<-round(varpart_table3, 3)
+varpart_plot<-varpart(rda_table[,c(15:25)],
+                      rda_table[,13],
+                      rda_table[,14] )
+
+varpart_table4<-varpart_plot$part$fract[1:2,]
+row.names(varpart_table4)<-c('CCA', 'US' )
+varpart_table4<-round(varpart_table4, 3)
+colnames(varpart_table4)[2:3]<-c('R.square', 'Adj.R.square')
+
+varpart_all_group<-rbind(varpart_table, varpart_table2, varpart_table3, varpart_table4)
+varpart_all_group$Testable<-NULL
+varpart_all_group$Category<-row.names(varpart_all_group)
+varpart_all_group<-dplyr::select(varpart_all_group, Category, Df, R.square, Adj.R.square)
+library(gt)
+varpart_gt<-gt(varpart_all_group)
+varpart_gt
+
+
+```
+
+## Generalized linear mixed effect models (GLMM) ##
+
+Using GLMM to further confirm the relationships.
+
+```{r scatter plots}
+####################prepare tables for modelling##################################
+library(glmmTMB)
+library(buildmer)
+library(lme4)
+library(ggplot2)
+library(tidyr)
+
+f<-which(colSums(comp_sub_metrics[,3:30]==0)<0.5*nrow(comp_sub_metrics)) #dplyr::select categories with sparsity < 0.5
+
+colnames(comp_sub_metrics)[31:54]<-c('S4', 'T4', 'V4', 'S32', 'T32',
+                                     'V32', 'PROC4', 'PLC4', 'PROC32',
+                                     'PLC32', 'S16', 'T16', 'V16', 'PROC16',
+                                     'PLC16', 'D64', 'SC', 'D1_2', 'D2_4', 'D4_8', 'D8_16',
+                                     'D16_32', 'D32_64', 'Sq')
+
+glmm_table1<-comp_sub_metrics[,c(2,f+2, 33)]
+glmm_table1$region<-as.factor(glmm_table1$region)
+col_names<-c('Region', 'Arborescent HC','Bushy HC', 'Encrusting HC',
+  'Foliose HC', 'Massive HC', 'Digitate OC',
+  'Lobate OC', 'TU', 'Bushy OC',
+  'Encrusting ZO', 'Massive ZO', 'CCA', 'BSS', 'MA',
+  'US')
+
+
+#PROC32
+glmm_table2<-comp_sub_metrics[,c(2,f+2, 39)]
+glmm_table2[2:15]<-glmm_table2[2:15]
+#colnames(glmm_table2)[1:16]<-col_names
+
+
+#PLC4
+glmm_table12<-comp_sub_metrics[,c(2,f+2, 38)]
+glmm_table12[2:15]<-glmm_table12[2:15]
+
+
+#PLC16
+glmm_table4<-comp_sub_metrics[,c(2,f+2, 45)]
+glmm_table4[2:15]<-glmm_table4[2:15]
+
+#PLC32
+glmm_table3<-comp_sub_metrics[,c(2,f+2, 40)]
+glmm_table3[2:15]<-glmm_table3[2:15]
+
+#D12
+glmm_table5<-comp_sub_metrics[,c(2,f+2, 48)]
+glmm_table5[2:15]<-glmm_table5[2:15]
+
+#D2_4
+glmm_table6<-comp_sub_metrics[,c(2,f+2, 49)]
+glmm_table6[2:15]<-glmm_table6[2:15]
+
+#D8_16
+glmm_table8<-comp_sub_metrics[,c(2,f+2, 51)]
+glmm_table8[2:15]<-glmm_table8[2:15]
+
+#D16_32
+glmm_table9<-comp_sub_metrics[,c(2,f+2, 52)]
+glmm_table9[2:15]<-glmm_table9[2:15]
+
+#D32_64
+glmm_table10<-comp_sub_metrics[,c(2,f+2, 53)]
+glmm_table10[2:15]<-glmm_table10[2:15]
+
+#Sq
+glmm_table11<-comp_sub_metrics[,c(2,f+2, 54)]
+glmm_table11[2:15]<-glmm_table11[2:15]
+
+
+```
+
+
+```{r GLMM, message = F, warning = F, echo=T, results='hide'}
+########################################GLMM########################################
+#################################vif prior to modelling######################################
+library(dplyr)
+library(usdm)
+glmm_vif_table<-dplyr::select(glmm_table11,hcarb, hcbus,hcenc,hcfol,
+                       hcmas, zoaenc,zoamas, ocdig,oclob, ocbus,ma, fil, cru_or_spoenc, us)
+vifstep(glmm_vif_table) #oclob and zoaenc are removed
+
+
+###################GLMM    modelling###################################################
+#####################################################################
+colnames(glmm_table1)[17]<-'V4'
+V4_glmm<-buildglmmTMB(V4~hcarb+hcbus+hcenc+hcfol+hcmas+zoamas+ocbus+ocdig+
+                        fil+cru_or_spoenc+ma+us+(1|region), 
+                      data=glmm_table1, family=gaussian(),
+                      buildmerControl = list(include = ~ (1|region), direction='forward'))
+
+V4_mod_sum<-summary(V4_glmm)
+
+
+
+colnames(glmm_table12)[c(1,17)]<-c('region','PLC4')
+
+PLC4_glmm<-buildglmmTMB(PLC4~hcarb+hcbus+hcenc+hcfol+hcmas+zoamas+ocbus+ocdig+
+                          fil+cru_or_spoenc+ma+us+(1|region), 
+                        data=glmm_table12, family=gaussian(),
+                        buildmerControl = list(include = ~ (1|region), direction='forward'))
+PLC4_mod_sum<-summary(PLC4_glmm)
+#plot(PLC4_glmm)
+
+
+colnames(glmm_table4)[17]<-'PLC16'
+PLC16_glmm<-buildglmmTMB(PLC16~hcarb+hcbus+hcenc+hcfol+hcmas+zoamas+ocbus+ocdig+
+                           fil+cru_or_spoenc+ma+us+(1|region), 
+                         data=glmm_table4, family=Gamma('log'),
+                         buildmerControl = list(include = ~ (1|region), direction='forward'))
+PLC16_mod_sum<-summary(PLC16_glmm)
+#plot(PLC32_glmm)
+
+
+colnames(glmm_table3)[17]<-'PLC32'
+PLC32_glmm<-buildglmmTMB(PLC32~hcarb+hcbus+hcenc+hcfol+hcmas+zoamas+ocbus+ocdig+
+                           fil+cru_or_spoenc+ma+us+(1|region), 
+                         data=glmm_table3, family=gaussian(),
+                         buildmerControl = list(include = ~ (1|region), direction='forward'))
+PLC32_mod_sum<-summary(PLC32_glmm)
+#plot(PLC32_glmm)
+
+
+colnames(glmm_table5)[17]<-'D1_2'
+D12_glmm<-buildglmmTMB(D1_2~hcarb+hcbus+hcenc+hcfol+hcmas+zoamas+ocbus+ocdig+
+                         fil+cru_or_spoenc+ma+us+(1|region), 
+                       data=glmm_table5, family=Gamma('log'),
+                       buildmerControl = list(include = ~ (1|region), direction='forward'))
+D12_mod_sum<-summary(D12_glmm)
+#plot(D12_glmm)
+
+
+colnames(glmm_table6)[17]<-'D2_4'
+D24_glmm<-buildglmmTMB(D2_4~hcarb+hcbus+hcenc+hcfol+hcmas+zoamas+ocbus+ocdig+
+                         fil+cru_or_spoenc+ma+us+(1|region), 
+                       data=glmm_table6, family=Gamma('log'),
+                       buildmerControl = list(include = ~ (1|region), direction='forward'))
+D24_mod_sum<-summary(D24_glmm)
+
+
+
+
+colnames(glmm_table8)[17]<-'D8_16'
+D816_glmm<-buildglmmTMB(D8_16~hcarb+hcbus+hcenc+hcfol+hcmas+zoamas+ocbus+ocdig+
+                          fil+cru_or_spoenc+ma+us+(1|region), 
+                        data=glmm_table8, family=Gamma('log'),
+                        buildmerControl = list(include = ~ (1|region), direction='forward'))
+D816_mod_sum<-summary(D816_glmm)
+
+
+colnames(glmm_table9)[17]<-'D16_32'
+D1632_glmm<-buildglmmTMB(D16_32~hcarb+hcbus+hcenc+hcfol+hcmas+zoamas+ocbus+ocdig+
+                           fil+cru_or_spoenc+ma+us+(1|region), 
+                         data=glmm_table9, family=gaussian(),
+                         buildmerControl = list(include = ~ (1|region), direction='forward'))
+D1632_mod_sum<-summary(D1632_glmm)
+#plot(D1632_glmm)
+
+
+colnames(glmm_table10)[17]<-'D32_64'
+D3264_glmm<-buildglmmTMB(D32_64~hcarb+hcbus+hcenc+hcfol+hcmas+zoamas+ocbus+ocdig+
+                           fil+cru_or_spoenc+ma+us+(1|region), 
+                         data=glmm_table10, family=gaussian(),
+                         buildmerControl = list(include = ~ (1|region), direction='forward'))
+D3264_mod_sum<-summary(D3264_glmm)
+
+
+colnames(glmm_table11)[17]<-'Sq'
+VRSD_glmm<-buildglmmTMB(Sq~hcarb+hcbus+hcenc+hcfol+hcmas+zoamas+ocbus+ocdig+
+                          fil+cru_or_spoenc+ma+us+(1|region), 
+                        data=glmm_table11, family=gaussian(),
+                        buildmerControl = list(include = ~ (1|region), direction='forward'))
+VRSD_mod_sum<-summary(VRSD_glmm) # No benthic variables can significantly explain Sq
+
+colnames(glmm_table2)[17]<-'PROC32'
+PROC32_glmm<-buildglmmTMB(PROC32~hcarb+hcbus+hcenc+hcfol+hcmas+zoamas+ocbus+ocdig+
+                            fil+cru_or_spoenc+ma+us+(1|region), 
+                          data=glmm_table2, family=Gamma('log'),
+                          buildmerControl = list(include = ~ (1|region)))
+
+PROC32_mod_sum<-summary(PROC32_glmm)
+```
+
+```{r show GLMM coefficients, warning =F, message=F}
+###########Show coefficients#########################
+
+library(broom.mixed)
+library(dotwhisker)
+
+V4_mod<-glmmTMB(V4_mod_sum$call$formula,data=glmm_table1,family=gaussian())
+V4_mod_sum<-summary(V4_mod)
+
+V4_coef<-dwplot(V4_mod, effects='fixed',whisker_args = list(color = "blue"),
+                dot_args = list(color = "black") )+
+  geom_vline(xintercept=0,lty=2)+
+  scale_y_discrete(labels=c('hcbus'='Bushy HC',
+                            'fil'='TU',
+                            'ocbus' = 'Bushy OC',
+                            'cru_or_spoenc' = 'CCA',
+                            'hcarb' = 'Arborescent HC',
+                            'zoamas' = 'Massive ZO'))
+
+
+
+PROC32_mod<-glmmTMB(PROC32_mod_sum$call$formula,data=glmm_table2,family=Gamma('log'))
+PROC32_mod_sum<-summary(PROC32_mod)
+PROC32_coef<-dwplot(PROC32_mod, effects='fixed',whisker_args = list(color = "red"),
+                    dot_args = list(color = "black"))+geom_vline(xintercept=0,lty=2)+
+ scale_y_discrete(labels=c('cru_or_spoenc' = 'CCA',
+                           'hcmas' = 'Massive HC',
+                           'fil' = 'TU'))
+
+PLC4_mod<-glmmTMB(PLC4_mod_sum$call$formula,data=glmm_table12,family=gaussian())
+
+PLC4_mod_sum<-summary(PLC4_mod)
+
+PLC4_coef<-dwplot(PLC4_mod, effects='fixed',whisker_args = list(color = "blue"),
+                  dot_args = list(color = "black") )+geom_vline(xintercept=0,lty=2)+
+  scale_y_discrete(labels= c('hcmas'='Massive HC','cru_or_spoenc'='CCA'))
+
+PLC16_mod<-glmmTMB(PLC16_mod_sum$call$formula,data=glmm_table4,family=Gamma('log'))
+
+PLC16_mod_sum<-summary(PLC16_mod)
+PLC16_coef<-dwplot(PLC16_mod, effects='fixed',whisker_args = list(color = "orange"),
+                   dot_args = list(color = "black"))+geom_vline(xintercept=0,lty=2)+
+scale_y_discrete(labels=c('cru_or_spoenc' = 'CCA',
+                          'ma' = 'MA'))
+
+
+PLC32_mod<-glmmTMB(PLC32_mod_sum$call$formula,data=glmm_table3,family=gaussian())
+PLC32_mod_sum<-summary(PLC32_mod)
+PLC32_coef<-dwplot(PLC32_mod, effects='fixed',whisker_args = list(color = "red"),
+                   dot_args = list(color = "black"))+geom_vline(xintercept=0,lty=2)+
+  scale_y_discrete(labels=c('fil' = 'TU'))
+
+D12_mod<-glmmTMB(D12_mod_sum$call$formula,data=glmm_table5,family=Gamma('log'))
+D12_mod_sum<-summary(D12_mod)
+D12_coef<-dwplot(D12_mod, effects='fixed',whisker_args = list(color = "blue"),
+                 dot_args = list(color = "black"))+geom_vline(xintercept=0,lty=2)+
+  scale_y_discrete(labels=c('hcarb' = 'Arborescent HC',
+                            'hcbus' = 'Bushy HC',
+                            'ocbus' = 'Bushy OC',
+                            'hcfol' = 'Foliose HC',
+                            'hcenc' = 'Encrusting HC',
+                            'us' = 'US',
+                            'zoamas' = 'Massive ZO'))
+
+
+D24_mod<-glmmTMB(D24_mod_sum$call$formula,data=glmm_table6,family=Gamma('log'))
+D24_mod_sum<-summary(D24_mod)
+D24_coef<-dwplot(D24_mod, effects='fixed',whisker_args = list(color = "blue"),
+       dot_args = list(color = "black"))+geom_vline(xintercept=0,lty=2)+
+  scale_y_discrete(labels=c('hcarb' = 'Arborescent HC',
+                            'hcbus' = 'Bushy HC',
+                            'ocbus' = 'Bushy OC',
+                            'hcfol' = 'Foliose HC',
+                            'fil' = 'TU',
+                            'cru_or_spoenc' = 'CCA'))
+
+
+D816_mod<-glmmTMB(D816_mod_sum$call$formula,data=glmm_table8,family=Gamma('log'))
+D816_mod_sum<-summary(D816_mod)
+D816_coef<-dwplot(D816_mod, effects='fixed',whisker_args = list(color = "orange"),
+       dot_args = list(color = "black"))+geom_vline(xintercept=0,lty=2)+
+  scale_y_discrete(labels=c('cru_or_spoenc' = 'CCA',
+                            'zoamas' = 'Massive ZO',
+                            'hcfol' = 'Foliose HC',
+                            'fil' = 'TU',
+                            'ocdig' = 'Digitate OC'))
+
+D1632_mod<-glmmTMB(D1632_mod_sum$call$formula,data=glmm_table9,family=gaussian())
+D1632_mod_sum<-summary(D1632_mod)
+D1632_coef<-dwplot(D1632_mod, effects='fixed',whisker_args = list(color = "orange"),
+       dot_args = list(color = "black"))+geom_vline(xintercept=0,lty=2)+
+ scale_y_discrete(labels=c('cru_or_spoenc' = 'CCA'))
+ggsave('Figures/NewVIF_D1632_coef.jpg',  D1632_coef,
+      width=1000, height=750, units='px')
+D3264_mod<-glmmTMB(D3264_mod_sum$call$formula,data=glmm_table10,family=gaussian())
+D3264_mod_sum<-summary(D3264_mod)
+D3264_coef<-dwplot(D3264_mod, effects='fixed',whisker_args = list(color = "red"),
+                   dot_args = list(color = "black"))+geom_vline(xintercept=0,lty=2)+
+ scale_y_discrete(labels=c('cru_or_spoenc' = 'CCA',
+                           'hcmas' = 'Massive HC'))
+
+VRSD_mod<-glmmTMB(VRSD_mod_sum$call$formula,data=glmm_table11,family=gaussian())
+##Combine all plots
+library(ggpubr)
+coef_plot<-ggarrange(V4_coef, PLC4_coef, D12_coef, D24_coef,
+                          PLC16_coef, D816_coef, D1632_coef,
+                          PROC32_coef, PLC32_coef, D3264_coef,
+                          
+          labels=c('VRM - 4 cm', 'PLC - 4 cm', 'D (1 - 2 cm)',
+                   'D (2 - 4 cm)','PLC - 16 cm', 'D (8 - 16 cm)', 'D (16 - 32 cm)',
+                   'PROC - 32 cm', 'PLC - 32 cm', 'D (32 - 64 cm)'
+                   ),
+          font.label = list(size = 10, color = "black", face = "bold", family = NULL),
+          ncol=2, nrow=5,vjust=1.2,
+          align='hv')
+coef_plot
+
+
+
+```
+
+### Showing the mean value and 95% CI of each coefficient in GLMMs. ###
+
+```{r show coefficients and 95%CI}
+####################Show CI and coefficients of every model#################################
+#V4
+V4_CI<-confint(V4_mod)[-nrow(confint(V4_mod)),]
+stats_table <- as.data.frame(V4_mod_sum$coefficients$cond)
+stats_table_V4<-cbind(
+  row.names(stats_table),
+  stats_table, V4_CI[,-3]
+)
+colnames(stats_table_V4) <- c(
+  "Term", "B", "SE", "t", "p",
+  "CI_lower", "CI_upper")
+stats_table_V4$Term<-c('Intercept','Bushy HC', 'Filamentous algae', 
+        'Bushy OC', 'CCA', 'Arborescent HC', 'Massive Zoanthids' )
+stats_table_V4
+PROC32_CI<-confint(PROC32_mod)[-nrow(confint(PROC32_mod)),]
+stats_table <- as.data.frame(PROC32_mod_sum$coefficients$cond)
+stats_table_PROC32<-cbind(
+  row.names(stats_table),
+  stats_table, PROC32_CI[,-3]
+)
+colnames(stats_table_PROC32) <- c(
+  "Term", "B", "SE", "t", "p",
+  "CI_lower", "CI_upper")
+stats_table_PROC32$Term<-c('Intercept','CCA', 'Massive HC', 
+                       'Filamentous algae' )
+stats_table_PROC32
+#PLC4
+PLC4_CI<-confint(PLC4_mod)[-nrow(confint(PLC4_mod)),]
+stats_table <- as.data.frame(PLC4_mod_sum$coefficients$cond)
+stats_table_PLC4<-cbind(
+  row.names(stats_table),
+  stats_table, PLC4_CI[,-3]
+)
+colnames(stats_table_PLC4) <- c(
+  "Term", "B", "SE", "t", "p",
+  "CI_lower", "CI_upper")
+stats_table_PLC4$Term<-c('Intercept','Massive HC', 
+                           'CCA' )
+stats_table_PLC4
+#PLC16
+PLC16_CI<-confint(PLC16_mod)[-nrow(confint(PLC16_mod)),]
+stats_table <- as.data.frame(PLC16_mod_sum$coefficients$cond)
+stats_table_PLC16<-cbind(
+  row.names(stats_table),
+  stats_table, PLC16_CI[,-3]
+)
+colnames(stats_table_PLC16) <- c(
+  "Term", "B", "SE", "t", "p",
+  "CI_lower", "CI_upper")
+stats_table_PLC16$Term<-c('Intercept','CCA', 
+                         'Macroalgae' )
+stats_table_PLC16
+
+#PLC32
+PLC32_CI<-confint(PLC32_mod)[-nrow(confint(PLC32_mod)),]
+stats_table <- as.data.frame(PLC32_mod_sum$coefficients$cond)
+stats_table_PLC32<-cbind(
+  row.names(stats_table),
+  stats_table, PLC32_CI[,-3]
+)
+colnames(stats_table_PLC32) <- c(
+  "Term", "B", "SE", "t", "p",
+  "CI_lower", "CI_upper")
+stats_table_PLC32$Term<-c('Intercept','Filamentous algae' )
+
+stats_table_PLC32
+
+#D12
+D12_CI<-confint(D12_mod)[-nrow(confint(D12_mod)),]
+stats_table <- as.data.frame(D12_mod_sum$coefficients$cond)
+stats_table_D12<-cbind(
+  row.names(stats_table),
+  stats_table, D12_CI[,-3]
+)
+colnames(stats_table_D12) <- c(
+  "Term", "B", "SE", "t", "p",
+  "CI_lower", "CI_upper")
+stats_table_D12$Term<-c('Intercept','Arborescent HC','Bushy HC', 'Bushy OC',
+                        'Foliose HC', 'Encrusting HC', 'US', 'Massive zoanthids')
+
+stats_table_D12
+
+#D24
+D24_CI<-confint(D24_mod)[-nrow(confint(D24_mod)),]
+stats_table <- as.data.frame(D24_mod_sum$coefficients$cond)
+stats_table_D24<-cbind(
+  row.names(stats_table),
+  stats_table, D24_CI[,-3]
+)
+colnames(stats_table_D24) <- c(
+  "Term", "B", "SE", "t", "p",
+  "CI_lower", "CI_upper")
+stats_table_D24$Term<-c('Intercept','Arborescent HC','Bushy HC', 'Bushy OC',
+                        'Foliose HC', 'Filamentous algae', 'CCA')
+
+stats_table_D24
+
+#D816
+D816_CI<-confint(D816_mod)[-nrow(confint(D816_mod)),]
+stats_table <- as.data.frame(D816_mod_sum$coefficients$cond)
+stats_table_D816<-cbind(
+  row.names(stats_table),
+  stats_table, D816_CI[,-3]
+)
+colnames(stats_table_D816) <- c(
+  "Term", "B", "SE", "t", "p",
+  "CI_lower", "CI_upper")
+stats_table_D816$Term<-c('Intercept','CCA','Foliose HC', 'Massive zoanthids',
+                         'Filamentous algae', 'Digitate OC')
+
+stats_table_D816
+
+#D1632
+D1632_CI<-confint(D1632_mod)[-nrow(confint(D1632_mod)),]
+stats_table <- as.data.frame(D1632_mod_sum$coefficients$cond)
+stats_table_D1632<-cbind(
+  row.names(stats_table),
+  stats_table, D1632_CI[,-3]
+)
+colnames(stats_table_D1632) <- c(
+  "Term", "B", "SE", "t", "p",
+  "CI_lower", "CI_upper")
+stats_table_D1632$Term<-c('Intercept','CCA')
+
+stats_table_D1632
+
+#D3264
+D3264_CI<-confint(D3264_mod)[-nrow(confint(D3264_mod)),]
+stats_table <- as.data.frame(D3264_mod_sum$coefficients$cond)
+stats_table_D3264<-cbind(
+  row.names(stats_table),
+  stats_table, D3264_CI[,-3]
+)
+colnames(stats_table_D3264) <- c(
+  "Term", "B", "SE", "t", "p",
+  "CI_lower", "CI_upper")
+stats_table_D3264$Term<-c('Intercept', 'CCA', 'Massive HC')
+
+stats_table_D3264
+
+#Sq
+VRSD_CI<-confint(VRSD_mod)[-nrow(confint(VRSD_mod)),]
+stats_table <- as.data.frame(VRSD_mod_sum$coefficients$cond)
+VRSD_CI<-as.data.frame(VRSD_CI)
+stats_table_VRSD<-cbind(
+  row.names(stats_table),
+  stats_table, t(VRSD_CI[-3,])
+)
+colnames(stats_table_VRSD) <- c(
+  "Term", "B", "SE", "t", "p",
+  "CI_lower", "CI_upper")
+stats_table_VRSD$Term<-c('Intercept')
+
+stats_table_VRSD
+
+
+
+```
+
+### Examining the GLMMs (pseudo-Rsquare and model diagnistic) ###
+```{r model inspection, warning=F, message=F}
+############################Check pseudo R2##########################################
+
+library(MuMIn)
+pseudo_r2_table<-as.data.frame(matrix( ncol=2,  nrow=11))
+row.names(pseudo_r2_table)<-c('VRM - 4 cm', 
+                              'PROC - 32 cm',
+                              'PLC - 4 cm',
+                              'PLC - 16 cm',
+                              'PLC - 32 cm',
+                              'D(1 - 2 cm)',
+                              'D(2 - 4 cm)',
+                              'D(8 - 16 cm)',
+                              'D(16 - 32 cm)',
+                              'D(32 - 64 cm)',
+                              'Sq')
+pseudo_r2_table[1,]<-round(r.squaredGLMM(V4_mod), 4) #model with best conditional R2
+pseudo_r2_table[2,]<-round(r.squaredGLMM(PROC32_mod)[1,], 4)
+pseudo_r2_table[3,]<-round(r.squaredGLMM(PLC4_mod),4)
+pseudo_r2_table[4,]<-round(r.squaredGLMM(PLC16_mod)[1,], 4) 
+pseudo_r2_table[5,]<-round(r.squaredGLMM(PLC32_mod), 4)#The least explained model
+pseudo_r2_table[6,]<-round(r.squaredGLMM(D12_mod)[1,],4)
+pseudo_r2_table[7,]<-round(r.squaredGLMM(D24_mod)[1,],4)# The second best-explained model
+pseudo_r2_table[8,]<-round(r.squaredGLMM(D816_mod)[1,],4)
+pseudo_r2_table[9,]<-round(r.squaredGLMM(D1632_mod),4)
+pseudo_r2_table[10,]<-round(r.squaredGLMM(D3264_mod),4)
+pseudo_r2_table[11,]<-round(r.squaredGLMM(VRSD_mod),4)
+colnames(pseudo_r2_table)<-c('Marginal R squared', 'Constrained R squared')
+#Save tables
+library(gt)
+library(rempsyc)
+pseudo_r2_table$Indicator<-row.names(pseudo_r2_table)
+pseudo_r2_table<-dplyr::select(pseudo_r2_table, Indicator, `Marginal R squared`, `Constrained R squared`)
+pseudo_r2_nice<-gt(pseudo_r2_table)
+
+pseudo_r2_nice
+gtsave(pseudo_r2_nice, 'Figures/PseudoR2.docx')
+######################Model diagniostics################################
+
+library(DHARMa)
+library(SuppDists)
+
+
+V4_resi<-simulateResiduals(V4_mod)
+
+plot(V4_resi, sub='VRM - 4 cm model diagnosis')
+
+PROC32_resi<-simulateResiduals(PROC32_mod)
+
+plot(PROC32_resi, sub='PROC - 32 cm model diagnosis')
+
+PLC4_resi<-simulateResiduals(PLC4_mod)
+
+plot(PLC4_resi, sub='PLC - 4 cm model diagnosis')
+
+PLC16_resi<-simulateResiduals(PLC16_mod)
+
+plot(PLC16_resi, sub='PLC - 16 cm model diagnosis')
+
+PLC32_resi<-simulateResiduals(PLC32_mod)
+
+plot(PLC32_resi, sub='PLC - 32 cm model diagnosis')
+
+D12_resi<-simulateResiduals(D12_mod)
+
+plot(D12_resi, sub='D (1 - 2 cm) model diagnosis')
+
+D24_resi<-simulateResiduals(D24_mod)
+
+plot(D24_resi, sub='D (2 - 4 cm) model diagnosis')
+
+D816_resi<-simulateResiduals(D816_mod)
+
+plot(D816_resi, sub='D (8 - 16 cm) model diagnosis')
+
+D1632_resi<-simulateResiduals(D1632_mod)
+
+plot(D1632_resi, sub='D (16 - 32 cm) model diagnosis')
+
+D3264_resi<-simulateResiduals(D3264_mod)
+
+plot(D3264_resi, sub='D (32 - 64 cm) model diagnosis')
+
+VRSD_resi<-simulateResiduals(VRSD_mod)
+
+plot(VRSD_resi, sub='Sq model diagnosis')
+
+
+
+
+
+
+
+```
+
+
+
+
