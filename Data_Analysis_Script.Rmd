@@ -908,6 +908,37 @@ vct.scores1<-scores(comp_sub_RDA,
 legend('topleft', fill=my_cols,
        legend= c('East Coast','Kenting', 'Ludao', 'Lanyu', 'North Coast'), 
        title='Region', cex=1.2)
+```
+
+
+```{r permanova composition, message=F}
+
+#####################PERMANOVA#########################
+library(rempsyc)
+comp_sub_std<-decostand(composition_substrates[,3:30], 'standardize')
+comp_sub_hel_std<-decostand(comp_sub_hel, 'standardize')
+
+
+
+comp_sub_PERMANOVA2<-adonis2(comp_sub_hel_std~region, data=composition_substrates,
+                            permutations = 9999, method='euc')
+
+comp_sub_PERMANOVA2
+
+
+
+
+#Pairwise Permutation
+library(RVAideMemoire)
+library(devtools)
+#install_github("pmartinezarbizu/pairwiseAdonis/pairwiseAdonis")
+library(pairwiseAdonis)
+
+permtest2<-pairwise.adonis(as.data.frame(comp_sub_hel_std), composition_substrates$region,
+                           sim.method = 'euc', p.adjust.m = 'BH', perm=9999)
+
+permtest2
+
 
 ```
 
