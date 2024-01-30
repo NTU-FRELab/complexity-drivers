@@ -479,6 +479,7 @@ Regional comparison in complexity based on PERMANOVA.
 ```{r PCA complexity}
 ###################PERMANOVA based on metrics#########################
 library(vegan)
+set.seed(123)
 metr_sel_std<-decostand(metrics_selected, 'standardize')
 region<-c('NC', 'NC', 'LY', 'NC', 'LD', 'LD', 'LY', 'KT', 'EC', 'LD', 'LD', 'KT', 'LY',
        'EC', 'EC', 'KT', 'EC', 'EC', 'NC', 'KT', 'NC', 'LD', 'LY', 'KT', 'LY')
@@ -915,6 +916,7 @@ legend('topleft', fill=my_cols,
 
 #####################PERMANOVA#########################
 library(rempsyc)
+set.seed(123)
 comp_sub_std<-decostand(composition_substrates[,3:30], 'standardize')
 comp_sub_hel_std<-decostand(comp_sub_hel, 'standardize')
 
