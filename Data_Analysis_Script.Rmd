@@ -912,6 +912,7 @@ legend('topleft', fill=my_cols,
 ```
 
 
+
 ```{r permanova composition, message=F}
 
 #####################PERMANOVA#########################
@@ -943,6 +944,73 @@ permtest2
 
 
 ```
+## The overview of benthic composition and the dominant categories ##
+
+Computing the mean and standard deviation (SD) of benthic categories based on regions to explore the dominant categories of each region.
+
+```{r barplot based on regions}
+#Rearrange the composition data frame again
+
+composition_all<-composition_substrates
+composition_all<-dplyr::select(composition_all, site, region, ascidian, ma, cru_or_spoenc, fil, 
+                        coeenc, hcarb, hcbus, hccol, hcenc, hcfol, hcmas, hctab, occlu, ocdig, 
+                        ocenc, oclob, ocmas, ocbus, ocfan, actinia, spoglo, spomas, spopap, sporep,
+                        zoaenc, zoamas, us, bss)
+composition_all$Algae<-rowSums(composition_all[,4:6])
+composition_all$HC<-rowSums(composition_all[, 8:14])
+composition_all$OC<-rowSums(composition_all[, 15:21])
+composition_all$SP<-rowSums(composition_all[, 23:26])
+composition_all$ZO<-rowSums(composition_all[, 27:28])
+composition_all$Abiotic<-rowSums(composition_all[,29:30])
+table<-composition_all[,-c(4:6, 8:21, 23:30)]
+colnames(table)[1:5]<-c('Site', 'Region', 'AS', 'CO', 'AN')
+table$Site[25]<-'82.5K'
+library(tidyr)
+library(ggplot2)
+set_levels<-c('LDS', 'DiBS', 'HBH', 
+              'TS', 'JLS', 'CCG', 'YY', 'DC', 'HR', 'TL', 'DaBS', 'GW',
+              'SL', 'CK', 'GGB', 'JMZ', 'JH', 'HS', 'JQ', 'FNL',
+              'MYS', 'LD', '82.5K', 'BT', 'CJ')
+table_long<-pivot_longer(cols=3:11, table,names_to = 'Group', values_to = 'Cover')
+
+#Show the table telling mean and SD.
+table_merge<-cbind(aggregate(table_long$Cover, by=list(table_long$Group, table_long$Region), FUN=sd),
+aggregate(table_long$Cover, by=list(table_long$Group, table_long$Region), FUN=mean))
+table_merge<-table_merge[,c(1,2,3,6)]
+colnames(table_merge)<-c('Category', 'Region', 'SD', 'Mean')
+
+table_merge
+
+set_region<-c('KT', 'LY', 'LD', 'EC', 'NC')
+
+#Visualize the mean and SD of benthic categories by means of barplot.
+bar_by_cat<-ggplot(data= table_merge, aes(y= Category, x=Mean, fill=factor(Region, levels=set_region)))+
+  geom_bar(stat="identity", color="black", 
+           position=position_dodge(), alpha= 0.8)+
+  geom_errorbar(aes(x=Mean, y= Category, xmin=Mean, xmax= Mean+SD), width = 0.25,
+                position=position_dodge(0.9))+
+  xlab('Cover')+
+  ylab('Category')+
+  labs(fill='Region')+
+  scale_fill_manual(values=c("#0c59fe","#15e0fa","#fec700","#fb7200", "#fc0f00"),
+                    breaks=c('NC', 'EC', 'LD', 'LY', 'KT'))+
+  theme(axis.text=element_text(size=18),
+        axis.title=element_text(size=20,face="bold"),
+        legend.text = element_text(size = 18), 
+        legend.title = element_text(size = 18, face='bold'))+
+  scale_x_continuous(expand = c(0, 0),
+                     limits=c(0, 0.8))
+
+bar_by_cat
+
+
+
+```
+
+
+
+
+
 
 ## Initial selection on benthic categories (sparsity + cross-validation) ##
 
