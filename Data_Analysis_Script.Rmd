@@ -981,6 +981,40 @@ colnames(table_merge)<-c('Category', 'Region', 'SD', 'Mean')
 
 table_merge
 
+######  KW test based on categories and regions ########
+Algae_kruskal<-kruskal.test(Algae~Region, data= table) #significant
+HC_kruskal<-kruskal.test(HC~Region, data= table)
+OC_kruskal<-kruskal.test(OC~Region, data= table)
+SP_kruskal<-kruskal.test(SP~Region, data= table)
+ZO_kruskal<-kruskal.test(ZO~Region, data= table) #significant
+Abiotic_kruskal<-kruskal.test(Abiotic~Region, data= table)
+
+#Pairwise Dunn test#
+library(PMCMRplus)
+table$Region<-as.factor(table$Region)
+Algae_DT<-kwAllPairsDunnTest(Algae~Region, data= table, method='bh') #Significance doesn't exist
+ZO_DT<-kwAllPairsDunnTest(ZO~Region, data= table, method='bh') #Significance at KT-NC
+
+library(rcompanion)
+library(rempsyc)
+Algae_DT<-PMCMRTable(Algae_DT)
+ZO_DT<-PMCMRTable(ZO_DT)
+
+#Show the results of KW test and Dunn test
+KW_chi<-c(Algae_kruskal$statistic, HC_kruskal$statistic, OC_kruskal$statistic,
+          SP_kruskal$statistic, ZO_kruskal$statistic, Abiotic_kruskal$statistic)
+KW_chi<-as.numeric(KW_chi)
+KW_p<-c(Algae_kruskal$p.value, HC_kruskal$p.value, OC_kruskal$p.value,
+  SP_kruskal$p.value, ZO_kruskal$p.value, Abiotic_kruskal$p.value)
+KW_result<-data.frame(KW_chi, KW_p)
+row.names(KW_result)<-c('Algae', 'HC', 'OC', 'SP', 'ZO', 'Abiotic')
+DT_sum<-cbind(Algae_DT, ZO_DT)
+DT_sum[,3]<-NULL
+colnames(DT_sum)<-c('Comparison', 'p.value of Algae', 'p.value of ZO')
+
+KW_result
+DT_sum
+
 set_region<-c('KT', 'LY', 'LD', 'EC', 'NC')
 
 #Visualize the mean and SD of benthic categories by means of barplot.
