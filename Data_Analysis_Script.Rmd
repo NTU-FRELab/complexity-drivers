@@ -1548,12 +1548,12 @@ ordihull(fwd_sel,
          border = NA)
 fwd_aov<-anova.cca(fwd_sel, by='axis',
                    permutations = how(nperm=999))
-
+fwd_aov
 fwd_aov_term<-anova.cca(fwd_sel, by='term',
                         permutations = how(nperm=999))
-
+fwd_aov_term
 fwd_aov_all<-anova.cca(fwd_sel,permutations = how(nperm=999))
-
+fwd_aov_all
 
 ```
 
