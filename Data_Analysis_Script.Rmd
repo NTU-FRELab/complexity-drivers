@@ -1058,7 +1058,7 @@ sparsity <- function(fraction = 0.7) {
 }
 #V4
 cv_V4<-cv.glmnet(y=comp_sub_metrics$`VRM - 4 cm`, 
-                 x=as.matrix(sqrt(comp_sub_metrics[,3:30])),
+                 x=as.matrix(comp_sub_metrics[,3:30]),
                  exclude=sparsity(0.5),
                  family=gaussian(),
                  nfolds=25)
@@ -1067,16 +1067,16 @@ coef(cv_V4, s='lambda.min')
 V4_coef<-as.data.frame(as.matrix(coef(cv_V4, s='lambda.min')))
 #PROC32
 cv_PROC32<-cv.glmnet(y=comp_sub_metrics$`PROC - 32 cm`, 
-                     x=as.matrix(sqrt(comp_sub_metrics[,3:30])),
+                     x=as.matrix(comp_sub_metrics[,3:30]),
                      exclude=sparsity(0.5),
-                     family=Gamma('log'),
+                     family=gaussian(),
                      nfolds=25)
 
 coef(cv_PROC32, s='lambda.min')
 PROC32_coef<-as.data.frame(as.matrix(coef(cv_PROC32, s='lambda.min')))
 #PLC4
 cv_PLC4<-cv.glmnet(y=comp_sub_metrics$`PLC - 4 cm`, 
-                   x=as.matrix(sqrt(comp_sub_metrics[,3:30])),
+                   x=as.matrix(comp_sub_metrics[,3:30]),
                    exclude=sparsity(0.5),
                    family=gaussian(),
                    nfolds=25)
@@ -1085,16 +1085,16 @@ coef(cv_PLC4, s='lambda.min')
 PLC4_coef<-as.data.frame(as.matrix(coef(cv_PLC4, s='lambda.min')))
 #PLC16
 cv_PLC16<-cv.glmnet(y=comp_sub_metrics$`PLC - 16 cm`, 
-                    x=as.matrix(sqrt(comp_sub_metrics[,3:30])),
+                    x=as.matrix(comp_sub_metrics[,3:30]),
                     exclude=sparsity(0.5),
-                    family=Gamma('log'),
+                    family=gaussian(),
                     nfolds=25)
 
 coef(cv_PLC16, s='lambda.min')
 PLC16_coef<-as.data.frame(as.matrix(coef(cv_PLC16, s='lambda.min')))
 #PLC32
 cv_PLC32<-cv.glmnet(y=comp_sub_metrics$`PLC - 32 cm`, 
-                    x=as.matrix(sqrt(comp_sub_metrics[,3:30])),
+                    x=as.matrix(comp_sub_metrics[,3:30]),
                     exclude=sparsity(0.5),
                     family=gaussian(),
                     nfolds=25)
@@ -1103,27 +1103,25 @@ coef(cv_PLC32, s='lambda.min')
 PLC32_coef<-as.data.frame(as.matrix(coef(cv_PLC32, s='lambda.min')))
 #D12
 cv_D12<-cv.glmnet(y=comp_sub_metrics$`D (1 - 2 cm)`, 
-                  x=as.matrix(sqrt(comp_sub_metrics[,3:30])),
+                  x=as.matrix(comp_sub_metrics[,3:30]),
                   exclude=sparsity(0.5),
-                  family=Gamma('log'),
+                  family=gaussian(),
                   nfolds=25)
-
 coef(cv_D12, s='lambda.min')
 D12_coef<-as.data.frame(as.matrix(coef(cv_D12, s='lambda.min')))
 #D24
 cv_D24<-cv.glmnet(y=comp_sub_metrics$`D (2 - 4 cm)`, 
                   x=as.matrix(comp_sub_metrics[,3:30]),
                   exclude=sparsity(0.5),
-                  family=Gamma('log'),
+                  family=gaussian(),
                   nfolds=25)
-
 coef(cv_D24, s='lambda.min')
 D24_coef<-as.data.frame(as.matrix(coef(cv_D24, s='lambda.min')))
 #D816
 cv_D816<-cv.glmnet(y=comp_sub_metrics$`D(8 - 16 cm)`, 
                    x=as.matrix(comp_sub_metrics[,3:30]),
                    exclude=sparsity(0.5),
-                   family=Gamma('log'),
+                   family=gaussian(),
                    nfolds=25)
 
 coef(cv_D816, s='lambda.min')
@@ -1143,7 +1141,6 @@ cv_D3264<-cv.glmnet(y=comp_sub_metrics$`D(32 - 64 cm)`,
                     exclude=sparsity(0.5),
                     family=gaussian(),
                     nfolds=25)
-
 coef(cv_D3264, s='lambda.min')
 D3264_coef<-as.data.frame(as.matrix(coef(cv_D3264, s='lambda.min')))
 #Sq
@@ -1226,7 +1223,7 @@ library(dplyr)
 comp_sub_hel_std<-decostand(comp_sub_hel, 'standardize')
 MetricsRDA_table<-dplyr::select(comp_sub_hel_std,`Arborescent HC`, `Bushy HC`, `Encrusting HC`,
                                 `Foliose HC`, `Massive HC`,
-                         `Encrusting ZO`,`Massive ZO`, 
+                         `Encrusting ZO`, 
                          `Lobate OC`, `Digitate OC`,`Bushy OC`, `TU`, `MA`, 
                          `CCA`,`BSS`, `US`
 )
@@ -1237,15 +1234,13 @@ groups<-c('NC', 'NC', 'LY', 'NC', 'LD', 'LD', 'LY', 'KT', 'EC', 'LD', 'LD',
           'KT', 'LY', 'EC', 'EC', 'KT', 'EC', 'EC', 'NC', 'KT', 'NC', 'LD',
           'LY', 'KT', 'LY')
 rda_table<-rda_table[,-1]
-rda_mod<-rda(rda_table[,c(16:26)]~., data=rda_table[,1:15])
+rda_mod<-rda(rda_table[,c(15:25)]~., data=rda_table[,1:14])
 rda_mod_summary<-summary(rda_mod)
 vif.cca(rda_mod)
-##remove BSS
-
-#Rebuild RDA again
+#remove BSS 
 MetricsRDA_table<-dplyr::select(comp_sub_hel_std,`Arborescent HC`, `Bushy HC`, `Encrusting HC`,
                                 `Foliose HC`, `Massive HC`,
-                                `Encrusting ZO`,`Massive ZO`, 
+                                `Encrusting ZO`, 
                                 `Lobate OC`, `Digitate OC`,`Bushy OC`, `TU`, `MA`, 
                                 `CCA`, `US`
 )
@@ -1258,38 +1253,29 @@ groups<-c('NC', 'NC', 'LY', 'NC', 'LD', 'LD', 'LY', 'KT', 'EC', 'LD', 'LD',
 groups2<-as.factor(groups)
 levels(groups2)<-my_cols
 rda_table<-rda_table[,-1]
-rda_mod<-rda(rda_table[,c(15:25)]~., data=rda_table[,1:14])
+rda_mod<-rda(rda_table[,c(14:24)]~., data=rda_table[,1:13])
 rda_mod_summary<-summary(rda_mod)
 vif.cca(rda_mod) #All VIF <10
-##Visualization
+#Visualization
 #Show R^2
 RsquareAdj(rda_mod)
 #Show biplot of RDA
-ordiplot(rda_mod,type='n',
-         scaling=3,,
+ordiplot(rda_mod,type = 'p',
          xlab=paste('RDA1, ', 
-                    round(rda_mod_summary$concont$importance[2,1]*100, 2), '%'),
-         ylab=paste('RDA2, ',round(rda_mod_summary$concont$importance[2,2]*100, 2), '%'),
+                    round(rda_mod_summary$cont$importance[2,1]*100, 2), '%'),
+         ylab=paste('RDA2, ',round(rda_mod_summary$cont$importance[2,2]*100, 2), '%'),
          xlim=c(-1,1),
          cex=0.8)
 title(
       sub='Variables selected by stepwise removing variables with VIF > 10')
 
 rda_sc<-scores(rda_mod,choice=1:2,
-               display='sp',
-               scaling=2)
+               display='sp')
 
 
-arrows(x0=0, y0=0,
-       x1=rda_sc[,1],
-       y1=rda_sc[,2],
-       length=0,
-       lty=1,
-       lwd=1.5,
-       col=rgb(1,0,0,0.7))
+
 rda_sc1<-scores(rda_mod,choice=1:2,
-               display='site',
-               scaling=3)
+               display='site')
 
 points(x=rda_sc1[,1], y=rda_sc1[,2], pch=20, cex=1.5,
        col=as.vector(groups2))
@@ -1297,148 +1283,69 @@ points(x=rda_sc1[,1], y=rda_sc1[,2], pch=20, cex=1.5,
 ordihull(rda_mod, 
          groups= groups,
          draw='polygon',
-         scaling=3,
          alpha=0.4,
          
          col=my_cols,
          border = NA)
-rda_sc2<-scores(rda_mod,choice=1:2,
-                scaling=2,
-                display = 'bp')
-row.names(rda_sc2)<-c('Arborescent HC', 'Bushy HC', 'Encrusting HC',
-                      'Foliose HC', 'Massive HC',
-                       'Encrusting ZO','Massive ZO', 
-                       'Lobate OC', 'Digitate OC','Bushy OC', 'TU', 
-                      'MA','CCA', 'US')
 
 
-text(x=rda_sc2[1,1]+0.07,
-     y=rda_sc2[1,2],
-     row.names(rda_sc2)[1],
-     cex=0.7,
-     col='black')
-text(x=rda_sc2[2,1],
-     y=rda_sc2[2,2]+0.03,
-     'Bushy  HC',
-     cex=0.8,
-     col='black')
-text(x=rda_sc2[3,1]-0.1,
-     y=rda_sc2[3,2],
-     row.names(rda_sc2)[3],
-     cex=0.8,
-     col='black')
-text(x=rda_sc2[4,1],
-     y=rda_sc2[4,2],
-     row.names(rda_sc2)[4],
-     cex=0.8,
-     col='black')
-text(x=rda_sc2[5,1]-0.03,
-     y=rda_sc2[5,2]-0.02,
-    'Massive  HC',
-     cex=0.8,
-     col='black')
-text(x=rda_sc2[6,1]-0.035,
-     y=rda_sc2[6,2],
-     row.names(rda_sc2)[6],
-     cex=0.75,
-     col='black')
-text(x=rda_sc2[7,1],
-     y=rda_sc2[7,2]-0.02,
-     row.names(rda_sc2)[7],
-     cex=0.75,
-     col='black')
-text(x=rda_sc2[8,1],
-     y=rda_sc2[8,2],
-     row.names(rda_sc2)[8],
-     cex=0.8,
-     col='black')
-text(x=rda_sc2[9,1]-0.01,
-     y=rda_sc2[9,2]-0.02,
-     row.names(rda_sc2)[9],
-     cex=0.8,
-     col='black')
-text(x=rda_sc2[10,1]-0.05,
-     y=rda_sc2[10,2],
-     'Bushy OC',
-     cex=0.8,
-     col='black')
-text(x=rda_sc2[11,1],
-     y=rda_sc2[11,2],
-     'TU',
-     cex=0.75,
-     col='black')
 
-text(x=rda_sc2[12,1]-0.12,
-     y=rda_sc2[12,2],
-     row.names(rda_sc2)[12],
-     cex=0.75,
-     col='black')
-text(x=rda_sc2[13,1],
-     y=rda_sc2[13,2],
-     row.names(rda_sc2)[13],
-     cex=0.8,
-     col='black')
-text(x=rda_sc2[14,1],
-     y=rda_sc2[14,2],
-     row.names(rda_sc2)[14],
-     cex=0.8,
-     col='black')
 text(x=rda_sc[1,1]+0.3,
-     y=rda_sc[1,2]+0.05,
+     y=rda_sc[1,2]+0.02,
      'VRM - 4 cm',
      cex=0.9,
-     col='black')
+     col='red')
 text(x=rda_sc[2,1]-0.1,
      y=rda_sc[2,2]+0.25,
      'PLC - 4 cm',
      cex=0.9,
-     col='black')
+     col='red')
 text(x=rda_sc[3,1]+0.45,
      y=rda_sc[3,2]-0.1,
      'PROC - 32 cm',
      cex=0.9,
-     col='black')
+     col='red')
 text(x=rda_sc[4,1]+0.45,
      y=rda_sc[4,2]-0.2,
      'PLC - 32 cm',
      cex=0.8,
-     col='black')
+     col='red')
 text(x=rda_sc[5,1]-0.4,
-     y=rda_sc[5,2]-0.04,
+     y=rda_sc[5,2],
      'PLC - 16 cm',
      cex=0.9,
-     col='black')
-text(x=rda_sc[6,1]+0.18,
-     y=rda_sc[6,2]+0.2,
+     col='red')
+text(x=rda_sc[6,1]+0.3,
+     y=rda_sc[6,2]+0.1,
      'D (1 - 2 cm)',
      cex=0.9,
-     col='black')
+     col='red')
 text(x=rda_sc[7,1]+0.15,
-     y=rda_sc[7,2]+0.2,
+     y=rda_sc[7,2]+0.15,
      'D (2 - 4 cm)',
      cex=0.9,
-     col='black')
+     col='red')
 
-text(x=rda_sc[8,1]+0.37,
+text(x=rda_sc[8,1]+0.42,
      y=rda_sc[8,2]+0.05,
      'D (8 - 16 cm)',
      cex=0.9,
-     col='black')
+     col='red')
 text(x=rda_sc[9,1]+0.5,
      y=rda_sc[9,2]-0.21,
      'D (16 - 32 cm)',
      cex=0.9,
-     col='black')
+     col='red')
 text(x=rda_sc[10,1]+0.4,
      y=rda_sc[10,2]-0.31,
      'D (32 - 64 cm)',
      cex=0.9,
-     col='black')
-text(x=rda_sc[11,1]+0.20,
+     col='red')
+text(x=rda_sc[11,1]+0.22,
      y=rda_sc[11,2]-0.15,
      'Sq',
      cex=0.9,
-     col='black')
+     col='red')
 legend('topright', fill=my_cols,
        legend= c('East Coast','Kenting', 'Ludao', 'Lanyu', 'North Coast'), 
        title='Region',
@@ -1447,6 +1354,8 @@ legend('topright', fill=my_cols,
 rda_mod_summary 
 
 #Show the scores of RDA1 and RDA2
+rda_sc2<-scores(rda_mod,choice=1:2,
+                display = 'bp')
 rda_scores<-as.data.frame(rda_sc2)
 rda_scores<-round(rda_scores, 3)
 rda_scores$Groups<-row.names(rda_scores)
@@ -1475,135 +1384,6 @@ rda_aov_all
 
 
 #######################################
-#######OrdiR2Step Again###############################
-fwd_sel<-ordiR2step(rda(rda_table[,c(15:25)]~1, data=rda_table[,1:14]), # lower model limit (simple!)
-           scope = formula(rda_mod), # upper model limit (the "full" model)
-           direction = "forward",
-           R2scope = TRUE, # can't surpass the "full" model's R2
-           pstep = 999,
-           trace = FALSE)# change to TRUE to see the selection process!
-
-rda_mod_summary<-summary(fwd_sel) 
-RsquareAdj(fwd_sel) #Adjusted R2 = 23.83%
-
-ordiplot(fwd_sel,type='n',
-         xlab=paste('RDA1, ', 
-                    round(rda_mod_summary$concont$importance[2,1]*100, 2), '%'),
-         ylab=paste('RDA2, ',round(rda_mod_summary$concont$importance[2,2]*100, 2), '%'),
-         scaling=3,
-         cex=1.5)
-
-title(main='Redundancy Analysis',
-      sub='Variable selection by foward selection')
-
-rda_sc<-scores(fwd_sel,choice=1:2,
-               display='sp',
-               scaling=3)
-
-
-arrows(x0=0, y0=0,
-       x1=rda_sc[,1],
-       y1=rda_sc[,2],
-       length=0,
-       lty=1,
-       lwd=1.5,
-       col='red')
-rda_sc1<-scores(rda_mod,choice=1:2,
-                display='site',
-                scaling=3)
-rda_sc1[which(rda_sc1<0)]<-rda_sc1[which(rda_sc1<0)]-0.06
-rda_sc1[which(rda_sc1>0)]<-rda_sc1[which(rda_sc1>0)]+0.04
-text(x=rda_sc[,1],
-     y=rda_sc[,2],
-     c('VRM - 4 cm', 'PLC - 4 cm', 'PROC - 32 cm', 'PLC - 32 cm',
-       'PLC - 16 cm', 'D (1 - 2 cm)', 'D (2 - 4 cm)', 'D (8 - 16 cm)',
-       'D (16 - 32 cm)', 'D (32 - 64 cm)',  'Sq'),
-     cex=0.8, col= 'black')
-
-rda_sc2<-scores(fwd_sel,choice=1:2,
-                scaling=2,
-                display = 'bp')
-text(x=rda_sc2[1,1],
-     y=rda_sc2[1,2],
-     'CCA',
-     cex=1,
-     col='black')
-text(x=rda_sc2[2,1],
-     y=rda_sc2[2,2],
-     'Bushy  HC',
-     cex=1,
-     col='black')
-text(x=rda_sc2[3,1],
-     y=rda_sc2[3,2],
-     'Enxrusting ZO',
-     cex=1,
-     col='black')
-
-ordihull(fwd_sel, 
-         groups= groups,
-         draw='polygon',
-         scaling=3,
-         alpha=0.4,
-         col=my_cols,
-         border = NA)
-fwd_aov<-anova.cca(fwd_sel, by='axis',
-                   permutations = how(nperm=999))
-fwd_aov
-fwd_aov_term<-anova.cca(fwd_sel, by='term',
-                        permutations = how(nperm=999))
-fwd_aov_term
-fwd_aov_all<-anova.cca(fwd_sel,permutations = how(nperm=999))
-fwd_aov_all
-
-```
-
-```{r Varpart}
-######################Variance partitioning###################################
-
-varpart_plot<-varpart(rda_table[,c(15:25)],
-                      X=rda_table[,1],
-                      rda_table[,2],
-                      rda_table[,3],
-                      rda_table[,4])
-
-varpart_table<-varpart_plot$part$fract[1:4,]
-row.names(varpart_table)<-c('Arborescent HC','Bushy HC', 'Encrusting HC', 'Foliose HC' )
-varpart_table<-round(varpart_table, 3)
-varpart_plot<-varpart(rda_table[,c(15:25)],
-                      X=rda_table[,5],
-                      rda_table[,6],
-                      rda_table[,7],
-                      rda_table[,8])
-
-varpart_table2<-varpart_plot$part$fract[1:4,]
-row.names(varpart_table2)<-c('Massive HC','Encrusting ZO', 'Massive ZO', 'Lobate OC' )
-varpart_table2<-round(varpart_table2, 3)
-varpart_plot<-varpart(rda_table[,c(15:25)],
-                      X=rda_table[,9],
-                      rda_table[,10],
-                      rda_table[,11],
-                      rda_table[,12])
-
-varpart_table3<-varpart_plot$part$fract[1:4,]
-row.names(varpart_table3)<-c('Digitate OC','Bushy OC', 'TU', 'MA' )
-varpart_table3<-round(varpart_table3, 3)
-varpart_plot<-varpart(rda_table[,c(15:25)],
-                      rda_table[,13],
-                      rda_table[,14] )
-
-varpart_table4<-varpart_plot$part$fract[1:2,]
-row.names(varpart_table4)<-c('CCA', 'US' )
-varpart_table4<-round(varpart_table4, 3)
-colnames(varpart_table4)[2:3]<-c('R.square', 'Adj.R.square')
-
-varpart_all_group<-rbind(varpart_table, varpart_table2, varpart_table3, varpart_table4)
-varpart_all_group$Testable<-NULL
-varpart_all_group$Category<-row.names(varpart_all_group)
-varpart_all_group<-dplyr::select(varpart_all_group, Category, Df, R.square, Adj.R.square)
-library(gt)
-varpart_gt<-gt(varpart_all_group)
-varpart_gt
-
 
 ```
 
