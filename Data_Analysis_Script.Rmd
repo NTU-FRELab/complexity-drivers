@@ -759,7 +759,7 @@ indicators<-c('S - 4 cm', 'TRI - 4 cm', 'VRM - 4 cm',
               'D (1 - 2 cm)', 'D (2 - 4 cm)', 'D (4 - 8 cm)', 
               'D(8 - 16 cm)', 'D(16 - 32 cm)', 'D(32 - 64 cm)',
               'Sq')
-colnames(comp_sub_metrics)[31:54]<-indicators
+colnames(comp_sub_metrics)[30:53]<-indicators
 
 
 #####################PCA for composition#########################################
@@ -771,14 +771,14 @@ library(devtools)
 my_cols<-c("#15e0fa", "#fc0f00","#fec700",  "#fb7200" ,"#0c59fe" )
 
 ##########################tb-PCA (hellinger transformed)###########################################
-comp_sub_hel<-decostand(composition_substrates[,3:30], method='hellinger')
+comp_sub_hel<-decostand(composition_substrates[,3:29], method='hellinger')
 comp_sub_hel<-decostand(comp_sub_hel, method='standardize')
 colnames(comp_sub_hel)<-c('AN', 'Arborescent HC',
                           'Bushy HC', 'Columnar HC', 'Encrusting HC',
                           'Foliose HC', 'Massive HC', 'Tabular HC', 'Digitate OC',
                           'Lobate OC', 'Massive OC','TU', 'Bushy OC',
                           'AS','Fan-shaped OC', 'Encrusting ZO',
-                          'Globular SP', 'Massive SP','Massive ZO',
+                          'Globular SP', 'Massive SP',
                           'Clustered OC','Encrusting OC', 'Repent SP',
                           'Papillate SP', 'CO', 'CCA',
                           'BSS', 'MA', 'US')
@@ -818,13 +818,13 @@ vct.scores<-scores(comp_sub_RDA,
 text(vct.scores[1,1],vct.scores[1,2],
      row.names(vct.scores)[1],
      col='black', cex=0.8)#actinia
-text(vct.scores[2,1],vct.scores[2,2]+0.02,
+text(vct.scores[2,1],vct.scores[2,2],
      row.names(vct.scores)[2],
      col='black', cex=0.8)#arborescent HC
 text(vct.scores[3,1],vct.scores[3,2],
      row.names(vct.scores)[3],
      col='black', cex=0.8) #Bushy HC
-text(vct.scores[4,1],vct.scores[4,2]+0.01,
+text(vct.scores[4,1],vct.scores[4,2],
      row.names(vct.scores)[4],
      col='black', cex=0.8) #columnar HC
 text(vct.scores[5,1],vct.scores[5,2],
@@ -836,7 +836,7 @@ text(vct.scores[6,1],vct.scores[6,2],
 text(vct.scores[7,1],vct.scores[7,2],
      row.names(vct.scores)[7],
      col='black', cex=0.8) #massive HC
-text(vct.scores[8,1],vct.scores[8,2]-0.015,
+text(vct.scores[8,1],vct.scores[8,2],
      row.names(vct.scores)[8],
      col='black', cex=0.8) #tabular HC
 text(vct.scores[9,1],vct.scores[9,2],
@@ -845,16 +845,16 @@ text(vct.scores[9,1],vct.scores[9,2],
 text(vct.scores[10,1],vct.scores[10,2],
      row.names(vct.scores)[10],
      col='black', cex=0.8) #lobate OC
-text(vct.scores[11,1],vct.scores[11,2]-0.02,
+text(vct.scores[11,1],vct.scores[11,2],
      row.names(vct.scores)[11],
      col='black', cex=0.8) #massive OC
 text(vct.scores[12,1],vct.scores[12,2],
      row.names(vct.scores)[12],
      col='black', cex=0.8) #filamentous algae
-text(vct.scores[13,1],vct.scores[13,2]+0.01,
+text(vct.scores[13,1],vct.scores[13,2],
      row.names(vct.scores)[13],
      col='black', cex=0.8) #bushy OC
-text(vct.scores[14,1],vct.scores[14,2]-0.05,
+text(vct.scores[14,1],vct.scores[14,2],
      row.names(vct.scores)[14],
      col='black', cex=0.8)#ascidian
 text(vct.scores[15,1],vct.scores[15,2],
@@ -871,34 +871,32 @@ text(vct.scores[18,1],vct.scores[18,2],
      col='black', cex=0.8)#spomas
 text(vct.scores[19,1],vct.scores[19,2],
      row.names(vct.scores)[19],
-     col='black', cex=0.8)#zoamas
+     col='black', cex=0.8)#clustered OC
 text(vct.scores[20,1],vct.scores[20,2],
      row.names(vct.scores)[20],
-     col='black', cex=0.8) #occlu
+     col='black', cex=0.8) #ocenc
 text(vct.scores[21,1],vct.scores[21,2],
      row.names(vct.scores)[21],
      col='black', cex=0.8) #ocenc
-text(vct.scores[22,1],vct.scores[22,2]-0.025,
+text(vct.scores[22,1],vct.scores[22,2],
      row.names(vct.scores)[22],
-     col='black', cex=0.8) #Repent SP
-text(vct.scores[23,1],vct.scores[23,2]-0.02,
+     col='black', cex=0.8) #spopap
+text(vct.scores[23,1],vct.scores[23,2],
      row.names(vct.scores)[23],
-     col='black', cex=0.8) #papillate sponges
+     col='black', cex=0.8) #CO
 text(vct.scores[24,1],vct.scores[24,2],
      row.names(vct.scores)[24],
-     col='black', cex=0.8)# CO
-text(vct.scores[25,1]-0.145,vct.scores[25,2]-0.02,
+     col='black', cex=0.8)# CCA
+text(vct.scores[25,1],vct.scores[25,2],
      row.names(vct.scores)[25],
-     col='black', cex=0.8) #CCA
+     col='black', cex=0.8) #BSS
 text(vct.scores[26,1],vct.scores[26,2],
      row.names(vct.scores)[26],
-     col='black', cex=0.7) #BSS
+     col='black', cex=0.7) #MA
 text(vct.scores[27,1],vct.scores[27,2],
      row.names(vct.scores)[27],
-     col='black', cex=0.7)#MA
-text(vct.scores[28,1],vct.scores[28,2],
-     row.names(vct.scores)[28],
-     col='black', cex=0.8) #US
+     col='black', cex=0.7)#US
+
 
 
 vct.scores1<-scores(comp_sub_RDA, 
@@ -918,7 +916,7 @@ legend('topleft', fill=my_cols,
 #####################PERMANOVA#########################
 library(rempsyc)
 set.seed(123)
-comp_sub_std<-decostand(composition_substrates[,3:30], 'standardize')
+comp_sub_std<-decostand(composition_substrates[,3:29], 'standardize')
 comp_sub_hel_std<-decostand(comp_sub_hel, 'standardize')
 
 
@@ -955,15 +953,14 @@ composition_all<-composition_substrates
 composition_all<-dplyr::select(composition_all, site, region, ascidian, ma, cru_or_spoenc, fil, 
                         coeenc, hcarb, hcbus, hccol, hcenc, hcfol, hcmas, hctab, occlu, ocdig, 
                         ocenc, oclob, ocmas, ocbus, ocfan, actinia, spoglo, spomas, spopap, sporep,
-                        zoaenc, zoamas, us, bss)
+                        zoaenc, us, bss)
 composition_all$Algae<-rowSums(composition_all[,4:6])
 composition_all$HC<-rowSums(composition_all[, 8:14])
 composition_all$OC<-rowSums(composition_all[, 15:21])
 composition_all$SP<-rowSums(composition_all[, 23:26])
-composition_all$ZO<-rowSums(composition_all[, 27:28])
-composition_all$Abiotic<-rowSums(composition_all[,29:30])
-table<-composition_all[,-c(4:6, 8:21, 23:30)]
-colnames(table)[1:5]<-c('Site', 'Region', 'AS', 'CO', 'AN')
+composition_all$Abiotic<-rowSums(composition_all[,28:29])
+table<-composition_all[,-c(4:6, 8:21, 23:26, 28:29)]
+colnames(table)[1:6]<-c('Site', 'Region', 'AS', 'CO', 'AN', 'ZO')
 table$Site[25]<-'82.5K'
 library(tidyr)
 library(ggplot2)
@@ -982,6 +979,7 @@ colnames(table_merge)<-c('Category', 'Region', 'SD', 'Mean')
 table_merge
 
 ######  KW test based on categories and regions ########
+set.seed(123)
 Algae_kruskal<-kruskal.test(Algae~Region, data= table) #significant
 HC_kruskal<-kruskal.test(HC~Region, data= table)
 OC_kruskal<-kruskal.test(OC~Region, data= table)
@@ -993,6 +991,7 @@ Abiotic_kruskal<-kruskal.test(Abiotic~Region, data= table)
 library(PMCMRplus)
 table$Region<-as.factor(table$Region)
 Algae_DT<-kwAllPairsDunnTest(Algae~Region, data= table, method='bh') #Significance doesn't exist
+
 ZO_DT<-kwAllPairsDunnTest(ZO~Region, data= table, method='bh') #Significance at KT-NC
 
 library(rcompanion)
@@ -1051,6 +1050,7 @@ bar_by_cat
 Using leave-one-out cross validation to select benthic groups strongly connecting to each complexity metric.
 
 ```{r glmnet, message=F}
+comp_sub_metrics[,3:29]<-decostand(comp_sub_metrics[,3:29], 'hel') #Use hellinger-transformed data to explain complexity
 library(glmnet)
 filter <- function(x, ...) which(colMeans(x == 0) > 0.5)
 sparsity <- function(fraction = 0.7) {
@@ -1058,7 +1058,7 @@ sparsity <- function(fraction = 0.7) {
 }
 #V4
 cv_V4<-cv.glmnet(y=comp_sub_metrics$`VRM - 4 cm`, 
-                 x=as.matrix(comp_sub_metrics[,3:30]),
+                 x=as.matrix(comp_sub_metrics[,3:29]),
                  exclude=sparsity(0.5),
                  family=gaussian(),
                  nfolds=25)
@@ -1067,7 +1067,7 @@ coef(cv_V4, s='lambda.min')
 V4_coef<-as.data.frame(as.matrix(coef(cv_V4, s='lambda.min')))
 #PROC32
 cv_PROC32<-cv.glmnet(y=comp_sub_metrics$`PROC - 32 cm`, 
-                     x=as.matrix(comp_sub_metrics[,3:30]),
+                     x=as.matrix(comp_sub_metrics[,3:29]),
                      exclude=sparsity(0.5),
                      family=gaussian(),
                      nfolds=25)
@@ -1076,7 +1076,7 @@ coef(cv_PROC32, s='lambda.min')
 PROC32_coef<-as.data.frame(as.matrix(coef(cv_PROC32, s='lambda.min')))
 #PLC4
 cv_PLC4<-cv.glmnet(y=comp_sub_metrics$`PLC - 4 cm`, 
-                   x=as.matrix(comp_sub_metrics[,3:30]),
+                   x=as.matrix(comp_sub_metrics[,3:29]),
                    exclude=sparsity(0.5),
                    family=gaussian(),
                    nfolds=25)
@@ -1085,7 +1085,7 @@ coef(cv_PLC4, s='lambda.min')
 PLC4_coef<-as.data.frame(as.matrix(coef(cv_PLC4, s='lambda.min')))
 #PLC16
 cv_PLC16<-cv.glmnet(y=comp_sub_metrics$`PLC - 16 cm`, 
-                    x=as.matrix(comp_sub_metrics[,3:30]),
+                    x=as.matrix(comp_sub_metrics[,3:29]),
                     exclude=sparsity(0.5),
                     family=gaussian(),
                     nfolds=25)
@@ -1094,7 +1094,7 @@ coef(cv_PLC16, s='lambda.min')
 PLC16_coef<-as.data.frame(as.matrix(coef(cv_PLC16, s='lambda.min')))
 #PLC32
 cv_PLC32<-cv.glmnet(y=comp_sub_metrics$`PLC - 32 cm`, 
-                    x=as.matrix(comp_sub_metrics[,3:30]),
+                    x=as.matrix(comp_sub_metrics[,3:29]),
                     exclude=sparsity(0.5),
                     family=gaussian(),
                     nfolds=25)
@@ -1103,7 +1103,7 @@ coef(cv_PLC32, s='lambda.min')
 PLC32_coef<-as.data.frame(as.matrix(coef(cv_PLC32, s='lambda.min')))
 #D12
 cv_D12<-cv.glmnet(y=comp_sub_metrics$`D (1 - 2 cm)`, 
-                  x=as.matrix(comp_sub_metrics[,3:30]),
+                  x=as.matrix(comp_sub_metrics[,3:29]),
                   exclude=sparsity(0.5),
                   family=gaussian(),
                   nfolds=25)
@@ -1111,7 +1111,7 @@ coef(cv_D12, s='lambda.min')
 D12_coef<-as.data.frame(as.matrix(coef(cv_D12, s='lambda.min')))
 #D24
 cv_D24<-cv.glmnet(y=comp_sub_metrics$`D (2 - 4 cm)`, 
-                  x=as.matrix(comp_sub_metrics[,3:30]),
+                  x=as.matrix(comp_sub_metrics[,3:29]),
                   exclude=sparsity(0.5),
                   family=gaussian(),
                   nfolds=25)
@@ -1119,7 +1119,7 @@ coef(cv_D24, s='lambda.min')
 D24_coef<-as.data.frame(as.matrix(coef(cv_D24, s='lambda.min')))
 #D816
 cv_D816<-cv.glmnet(y=comp_sub_metrics$`D(8 - 16 cm)`, 
-                   x=as.matrix(comp_sub_metrics[,3:30]),
+                   x=as.matrix(comp_sub_metrics[,3:29]),
                    exclude=sparsity(0.5),
                    family=gaussian(),
                    nfolds=25)
@@ -1128,7 +1128,7 @@ coef(cv_D816, s='lambda.min')
 D816_coef<-as.data.frame(as.matrix(coef(cv_D816, s='lambda.min')))
 #D1632
 cv_D1632<-cv.glmnet(y=comp_sub_metrics$`D(16 - 32 cm)`, 
-                    x=as.matrix(comp_sub_metrics[,3:30]),
+                    x=as.matrix(comp_sub_metrics[,3:29]),
                     exclude=sparsity(0.5),
                     family=gaussian(),
                     nfolds=25)
@@ -1137,7 +1137,7 @@ coef(cv_D1632, s='lambda.min')
 D1632_coef<-as.data.frame(as.matrix(coef(cv_D1632, s='lambda.min')))
 #D3264
 cv_D3264<-cv.glmnet(y=comp_sub_metrics$`D(32 - 64 cm)`, 
-                    x=as.matrix(comp_sub_metrics[,3:30]),
+                    x=as.matrix(comp_sub_metrics[,3:29]),
                     exclude=sparsity(0.5),
                     family=gaussian(),
                     nfolds=25)
@@ -1145,7 +1145,7 @@ coef(cv_D3264, s='lambda.min')
 D3264_coef<-as.data.frame(as.matrix(coef(cv_D3264, s='lambda.min')))
 #Sq
 cv_VRSD<-cv.glmnet(y=comp_sub_metrics$Sq, 
-                   x=as.matrix(comp_sub_metrics[,3:30]),
+                   x=as.matrix(comp_sub_metrics[,3:29]),
                    exclude=sparsity(0.5),
                    family=gaussian(),
                    nfolds=25)
@@ -1195,8 +1195,8 @@ row.names(cv_coef)<-c('Intercept', 'AN', 'Arborescent HC',
                       'Bushy HC', 'Columnar HC', 'Encrusting HC', 'Foliose HC', 
                       'Massive HC', 'Tabular HC', 'Digitate OC', 'Lobate OC', 
                       'Massive OC', 'TU', 'Bushy OC', 
-                      'AS', 'Fan OC', 'Encrusting zoanthid', 'Globular SP',
-                      'Massive SP', 'Massive ZO', 'Clustered OC', 'Encrusting OC',
+                      'AS', 'Fan OC', 'Encrusting ZO', 'Globular SP',
+                      'Massive SP', 'Clustered OC', 'Encrusting OC',
                       'Repent SP', 'Papillate SP', 'CO', 'CCA', 
                       'BSS', 'MA', 'US')
 cv_coef<-cv_coef[c(1,4,5,7,8,9,11,12,15,16,19,22,28, 29:31 ),]
