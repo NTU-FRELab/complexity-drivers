@@ -1,24 +1,27 @@
-## Data from: Benthic Drivers of Structural Complexity across A Transition Zone
+## Data from: Benthic drivers of structural complexity in coral reefs across a tropical-subtropical transition zone
 
 This README file was generated on 18th-Jan-2024 by Meng-Hsin Morris Wu (tapewormwu@gmail.com). Knit Data_Analysis_Script.Rmd to generate html and extract R code.
 
-1. Author Information
+1. **Author Information**
 
-First author Name: Meng-Hsin Morris Wu Institution: Institute of Oceanography, National Taiwan University, Taipei 10617, Taiwan
+First author name: Mr. Meng-Hsin Morris Wu. Affiliation: Institute of Oceanography, National Taiwan University, Taipei 10617, Taiwan
 
-Second author Name: Dr. Lauriane Ribas-Deulofeu Institution: Institute of Oceanography, National Taiwan University, Taipei 10617, Taiwan
+Second author name: Dr. Lauriane Ribas-Deulofeu. Affiliation: Institute of Oceanography, National Taiwan University, Taipei 10617, Taiwan; Ocean Center, National Taiwan University, Taipei 10617, Taiwan.
 
-Third & corresponding author Name: Dr Vianney Denis Institution: Institute of Oceanography, National Taiwan University, Taipei 10617, Taiwan Email: vianney.denis@gmail.com
+Third author name: Mr. Chia-Hung Eric Liu. Affiliation: Institute of Oceanography, National Taiwan University, Taipei 10617, Taiwan.
 
-2. Date of data collection: 2023
+Fourth author name: Prof. Yoko Nozawa. Affiliation: Tropical Biosphere Research Center, University of the Ryukyus, Okinawa 905-0227, Japan; Department of Marine Science, Faculty of Fisheries and Marine Science, Universitas Diponegoro, Semarang, Indonesia.
 
-3. Geographic location of data collection: southern, eastern, and northern Taiwan, West Pacific
+Fifth & corresponding author name: Prof. Vianney Denis Affiliation: Institute of Oceanography, National Taiwan University, Taipei 10617, Taiwan; Ocean Center, National Taiwan University, Taipei 10617, Taiwan. Email: vianneydenis@ntu.edu.tw
 
-4. Funding sources that supported the collection of the data: Ocean Conservation Administration of Taiwan, Ministry of Science and Technology of Taiwan
+2. **Date of data collection:** 2023
 
-5. Recommended citation for this dataset Wu, Meng-Hsin Morris; Ribas-Deulofeu, Lauriane; Denis, Vianney (2023), Data from: Benthic Drivers of Structural Complexity across A Transition Zone, Dryad, Dataset, DOI:
+3. **Geographic location of data collection:** southern, eastern, and northern Taiwan, West Pacific
 
-[Data and R script are also available through the GitHub repository GitHub_Link in order to replicate our analyses]
+4. **Funding sources that supported the collection of the data:** Ocean Conservation Administration of Taiwan, Ministry of Science and Technology of Taiwan
+
+5. **Recommended citation for this dataset:** Wu, Meng-Hsin Morris; Ribas-Deulofeu, Lauriane; Liu, Chia-Hung Eric; Nozawa, Yoko; Denis, Vianney (2024), Data from: Benthic drivers of structural complexity in coral reefs across a tropical-subtropical transition zone, Dryad, Dataset, DOI: XXXX
+
 
 ***DESCRIPTION OF THE DATA AND FILE STRUCTURE***
 
