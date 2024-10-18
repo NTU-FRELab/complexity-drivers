@@ -20,7 +20,7 @@ Fifth & corresponding author name: Prof. Vianney Denis Affiliation: Institute of
 
 4. **Funding sources that supported the collection of the data:** Ocean Conservation Administration of Taiwan, Ministry of Science and Technology of Taiwan
 
-5. **Recommended citation for this dataset:** Wu, Meng-Hsin Morris; Ribas-Deulofeu, Lauriane; Liu, Chia-Hung Eric; Nozawa, Yoko; Denis, Vianney (2024), Data from: Benthic drivers of structural complexity in coral reefs across a tropical-subtropical transition zone, Dryad, Dataset, DOI: XXXX
+5. **Recommended citation for this dataset:** Wu, Meng-Hsin Morris; Ribas-Deulofeu, Lauriane; Liu, Chia-Hung Eric; Nozawa, Yoko; Denis, Vianney (2024), Data from: Benthic drivers of structural complexity in coral reefs across a tropical-subtropical transition zone, Forthcoming on Dryad, Dataset, https://doi.org/10.5061/dryad.931zcrjw2.
 
 
 ***DESCRIPTION OF THE DATA AND FILE STRUCTURE***
