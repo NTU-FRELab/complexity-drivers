@@ -1,6 +1,6 @@
 ## Data from: Benthic drivers of structural complexity in coral reefs across a tropical-subtropical transition zone
 
-This README file was generated on 18th-Jan-2024 by Meng-Hsin Morris Wu (tapewormwu@gmail.com). Knit Data_Analysis_Script.Rmd to generate html and extract R code.
+This README file was generated on 2024/01/18 by Meng-Hsin Morris Wu (tapewormwu@gmail.com). Knit Data_Analysis_Script.Rmd to generate html and extract R code. (Latest update on 2024/10/18)
 
 1. **Author Information**
 
