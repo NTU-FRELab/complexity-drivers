@@ -48,7 +48,7 @@ File 4 model_quality.xlsx; File 4 description: Quality of the 3D models reconstr
 
 ***METHODOLOGICAL INFORMATION***
 
-A detailed description of data acquisition and processing can be found in the published manuscript in the JOURNAL NAME (DOI).
+A detailed description of data acquisition and processing can be found in the published manuscript in Frontiers in Marine Science (https://doi.org/10.3389/fmars.2025.1513498).
 
 
 **DATA-SPECIFIC INFORMATION**
