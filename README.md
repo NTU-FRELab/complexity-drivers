@@ -4,15 +4,26 @@ This README file was generated on 2024/01/18 by Meng-Hsin Morris Wu (tapewormwu@
 
 1. **Author Information**
 
-First author name: Mr. Meng-Hsin Morris Wu. Affiliation: Institute of Oceanography, National Taiwan University, Taipei 10617, Taiwan
+- First author
+  - Name: Mr. Meng-Hsin Morris Wu
+  - Affiliation: Institute of Oceanography, National Taiwan University, Taipei 10617, Taiwan
 
-Second author name: Dr. Lauriane Ribas-Deulofeu. Affiliation: Institute of Oceanography, National Taiwan University, Taipei 10617, Taiwan; Ocean Center, National Taiwan University, Taipei 10617, Taiwan.
+- Second author
+  - Name: Dr. Lauriane Ribas-Deulofeu
+  - Affiliation: Institute of Oceanography, National Taiwan University, Taipei 10617, Taiwan; Ocean Center, National Taiwan University, Taipei 10617, Taiwan
 
-Third author name: Mr. Chia-Hung Eric Liu. Affiliation: Institute of Oceanography, National Taiwan University, Taipei 10617, Taiwan.
+- Third author
+  - Name: Mr. Chia-Hung Eric Liu
+  - Affiliation: Institute of Oceanography, National Taiwan University, Taipei 10617, Taiwan
 
-Fourth author name: Prof. Yoko Nozawa. Affiliation: Tropical Biosphere Research Center, University of the Ryukyus, Okinawa 905-0227, Japan; Department of Marine Science, Faculty of Fisheries and Marine Science, Universitas Diponegoro, Semarang, Indonesia.
+- Fourth author
+  - Name: Prof. Yoko Nozawa.
+  - Affiliation: Tropical Biosphere Research Center, University of the Ryukyus, Okinawa 905-0227, Japan; Department of Marine Science, Faculty of Fisheries and Marine Science, Universitas Diponegoro, Semarang, Indonesia.
 
-Fifth & corresponding author name: Prof. Vianney Denis Affiliation: Institute of Oceanography, National Taiwan University, Taipei 10617, Taiwan; Ocean Center, National Taiwan University, Taipei 10617, Taiwan. Email: vianneydenis@ntu.edu.tw
+- Fifth & corresponding author
+  - Name: Prof. Vianney Denis
+  - Affiliation: Institute of Oceanography, National Taiwan University, Taipei 10617, Taiwan; Ocean Center, National Taiwan University, Taipei 10617, Taiwan
+  - Email: vianneydenis@ntu.edu.tw
 
 2. **Date of data collection:** 2023
 
