@@ -1,6 +1,6 @@
 ## Data from: Benthic drivers of structural complexity in coral reefs across a tropical-subtropical transition zone
 
-This README file was generated on 2024/01/18 by Meng-Hsin Morris Wu (tapewormwu@gmail.com). Knit Data_Analysis_Script.Rmd to generate html and extract R code. (Latest update on 2024/10/18)
+This README file was generated on 2024/01/18 by Meng-Hsin Morris Wu (tapewormwu@gmail.com). Knit Data_Analysis_Script.Rmd to generate html and extract R code (Latest update on 2024/10/18).
 
 1. **Author Information**
 
@@ -20,7 +20,7 @@ Fifth & corresponding author name: Prof. Vianney Denis Affiliation: Institute of
 
 4. **Funding sources that supported the collection of the data:** Ocean Conservation Administration of Taiwan, Ministry of Science and Technology of Taiwan
 
-5. **Recommended citation for this dataset:** Wu, Meng-Hsin Morris; Ribas-Deulofeu, Lauriane; Liu, Chia-Hung Eric; Nozawa, Yoko; Denis, Vianney (2024), Data from: Benthic drivers of structural complexity in coral reefs across a tropical-subtropical transition zone, Forthcoming on Dryad, Dataset, https://doi.org/10.5061/dryad.931zcrjw2.
+5. **Recommended citation for this dataset:** Wu M-HM, Ribas-Deulofeu L, Liu C-HE, Nozawa Y, Denis V (2025) Data from: Benthic drivers of structural complexity in coral reefs across a tropical-subtropical transition zone, Dryad, Dataset, https://doi.org/10.5061/dryad.931zcrjw2.
 
 
 ***DESCRIPTION OF THE DATA AND FILE STRUCTURE***
