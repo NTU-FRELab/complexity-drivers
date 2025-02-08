@@ -13,7 +13,29 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-
+## **Packages**
+```{r eval = T, echo = T, message = F, warning = F}
+library(tidyverse)
+library(corrplot)
+library(car)
+library(olsrr)
+library(readxl)
+library(usdm)
+library(ggpubr)
+library(fishualize)
+library(grid)
+library(vegan)
+library(RVAideMemoire)
+library(devtools)
+library(PMCMRplus)
+library(rcompanion)
+library(rempsyc)
+library(gt)
+library(PMCMRplus)
+library(glmnet)
+library(pairwiseAdonis)
+#install_github("pmartinezarbizu/pairwiseAdonis/pairwiseAdonis")
+```
 
 
 ## Metric extraction (Fractal dimension) ##
@@ -52,7 +74,7 @@ SA.data$LogSA<-log(SurfaceArea)
 SA.data$LogRES<-log(resolution/100)
 lmSA64<-lm(LogSA[2:8]~LogRES[2:8], data=SA.data) 
 FD64<-2-lmSA64_2$coefficients[2] # Get D (1 - 64 cm)
-library(ggplot2)
+
 #Visualization of D (1 - 64 cm)
 FD64Plot<-ggplot(SA.data[1:8, ], aes(x=LogRES, 
                                      y=LogSA))+
@@ -83,7 +105,6 @@ Showing the reprojection error, ground resolution, and control error of each mod
 ```{r 3D model quality}
 ########################################################################
 rm(list=ls())
-library(readxl)
 mod_qual<-read_xlsx('Data/model_quality.xlsx')
 mod_qual<-as.data.frame(mod_qual)
 row.names(mod_qual)<-mod_qual[,1]
@@ -126,18 +147,10 @@ round(mod_qual_sum, 2)
 The metrics were collected by using QGIS. Fractal dimension (D) was computed by data extracted by QGIS and the code provided at **section 1**. All metrics of each site were manually organized in a table.
 
 ```{r metrics selection, message= F}
-
-
-library(corrplot)
-library(car)
-library(readxl)
-library(olsrr)
-
 raw_metrics<-read.csv('Data/complexity_metrics.csv')#read the table with all metrics
 row.names(raw_metrics)<-raw_metrics$X
 metrics<-raw_metrics[,-c(1,26)]
 head(metrics)
-
 ```
 
 
@@ -146,8 +159,6 @@ head(metrics)
 Benthic cover of each group was accessed by computing the proportion of area each group accounts in each plot.
 
 ```{r import composition, message=F}
-
-library(dplyr)
 composition_substrates<-read.csv('Data/composition_substrates.csv')
 #composition_substrates[,1]<-NULL
 row.names(composition_substrates)<-composition_substrates$site
@@ -202,7 +213,6 @@ Removing complexity metrics greatly contributing to collinearity by using varian
 
 ```{r VIF for complexity, message=F}
 ###############Use usdm for stepwise VIF selection on metrics##################################
-library(usdm)
 v1<-vifstep(metrics, th=10)
 metrics_selected<-exclude(metrics, v1)
 metrics_selected #See metrics retained from selection
@@ -218,7 +228,6 @@ Latitudinal correlation of each complexity metric.
 
 ```{r latitudinal comparison}
 ##Latitudinal correlation of metrics###
-library(readxl)
 #Import latitudes of sites
 coordi<-read_xlsx('Data/coordinates.xlsx') 
 coordi<-as.data.frame(coordi)
@@ -246,7 +255,6 @@ cor_v4_lat<-cor.test(metrics_coordi$Lat, metrics_coordi$V4, method='pearson',
          conf.level = 0.95)
 
 #Plot the relationship with latitudes
-library(ggplot2)
 plot_v4_lat<-ggplot(data=metrics_coordi, aes(x=Lat, y=V4))+
   geom_point(aes(col=region))+
   geom_smooth(method='lm')+
@@ -417,8 +425,6 @@ plot_VRSD_lat<-ggplot(data=metrics_coordi, aes(x=Lat, y=VRSD4))+
   guides(color = guide_legend(title = "Region"))+
   scale_color_manual(values=c( "#fc0f00",  "#fb7200","#fec700", "#15e0fa","#0c59fe" ))
 
-library(ggpubr)
-library(grid)
 
 Arrange1<-ggarrange(plot_D12_lat + rremove("xlab"),
                     plot_D24_lat + rremove("xlab"), 
@@ -478,7 +484,6 @@ Regional comparison in complexity based on PERMANOVA.
 
 ```{r PCA complexity}
 ###################PERMANOVA based on metrics#########################
-library(vegan)
 set.seed(123)
 metr_sel_std<-decostand(metrics_selected, 'standardize')
 region<-c('NC', 'NC', 'LY', 'NC', 'LD', 'LD', 'LY', 'KT', 'EC', 'LD', 'LD', 'KT', 'LY',
@@ -494,9 +499,6 @@ metr_sel_PERMANOVA<-adonis2(metr_sel_std~region, data=metr_sel_region,
 
 metr_sel_PERMANOVA
 
-library(RVAideMemoire)
-library(devtools)
-library(pairwiseAdonis)
 #Pairwise permutation test
 permtest<-pairwise.adonis(as.data.frame(metr_sel_std), metr_sel_region$region,
                           sim.method='euclidean', p.adjust.m = 'BH', perm=9999)
@@ -530,7 +532,7 @@ D3264_kruskal<-kruskal.test(D32_64~region, data=metrics_coordi)
 VRSD_kruskal<-kruskal.test(VRSD4~region, data=metrics_coordi)
 
 ######################Pairwise Dunn test########################################
-library(PMCMRplus)
+
 PROC32_DT<-kwAllPairsDunnTest(PROC32~region, data=metrics_coordi, method='bh')
 #Significance at EC-LY, EC-NC
 D3264_DT<-kwAllPairsDunnTest(D32_64~region, data=metrics_coordi, method="bh")
@@ -539,8 +541,6 @@ D12_DT<-kwAllPairsDunnTest(D1_2~region, data=metrics_coordi, method="bh")
 #Significance at LY-NC, KT-NC
 
 #Show significant pairs
-library(rcompanion)
-library(rempsyc)
 PROC32_DT<-PMCMRTable(PROC32_DT)
 D3264_DT<-PMCMRTable(D3264_DT)
 D12_DT<-PMCMRTable(D12_DT)
@@ -554,7 +554,6 @@ DT_NT
 
 
 ####Plot relationships between regions###
-library(ggpubr)
 #V4
 box_V4_region<-ggplot(data=metrics_coordi, 
                       aes(x=region, y=V4 ))+
@@ -765,8 +764,6 @@ colnames(comp_sub_metrics)[30:53]<-indicators
 #####################PCA for composition#########################################
 ##############set color###########################
 
-library(fishualize)
-library(devtools)
 #devtools::install_github("nschiett/fishualize", force = TRUE)
 my_cols<-c("#15e0fa", "#fc0f00","#fec700",  "#fb7200" ,"#0c59fe" )
 
@@ -914,7 +911,7 @@ legend('topleft', fill=my_cols,
 ```{r permanova composition, message=F}
 
 #####################PERMANOVA#########################
-library(rempsyc)
+
 set.seed(123)
 comp_sub_std<-decostand(composition_substrates[,3:29], 'standardize')
 comp_sub_hel_std<-decostand(comp_sub_hel, 'standardize')
@@ -930,11 +927,6 @@ comp_sub_PERMANOVA2
 
 
 #Pairwise Permutation
-library(RVAideMemoire)
-library(devtools)
-#install_github("pmartinezarbizu/pairwiseAdonis/pairwiseAdonis")
-library(pairwiseAdonis)
-
 permtest2<-pairwise.adonis(as.data.frame(comp_sub_hel_std), composition_substrates$region,
                            sim.method = 'euc', p.adjust.m = 'BH', perm=9999)
 
@@ -962,8 +954,6 @@ composition_all$Abiotic<-rowSums(composition_all[,28:29])
 table<-composition_all[,-c(4:6, 8:21, 23:26, 28:29)]
 colnames(table)[1:6]<-c('Site', 'Region', 'AS', 'CO', 'AN', 'ZO')
 table$Site[25]<-'82.5K'
-library(tidyr)
-library(ggplot2)
 set_levels<-c('LDS', 'DiBS', 'HBH', 
               'TS', 'JLS', 'CCG', 'YY', 'DC', 'HR', 'TL', 'DaBS', 'GW',
               'SL', 'CK', 'GGB', 'JMZ', 'JH', 'HS', 'JQ', 'FNL',
@@ -988,14 +978,12 @@ ZO_kruskal<-kruskal.test(ZO~Region, data= table) #significant
 Abiotic_kruskal<-kruskal.test(Abiotic~Region, data= table)
 
 #Pairwise Dunn test#
-library(PMCMRplus)
+
 table$Region<-as.factor(table$Region)
 Algae_DT<-kwAllPairsDunnTest(Algae~Region, data= table, method='bh') #Significance doesn't exist
 
 ZO_DT<-kwAllPairsDunnTest(ZO~Region, data= table, method='bh') #Significance at KT-NC
 
-library(rcompanion)
-library(rempsyc)
 Algae_DT<-PMCMRTable(Algae_DT)
 ZO_DT<-PMCMRTable(ZO_DT)
 
@@ -1051,7 +1039,7 @@ Using leave-one-out cross validation to select benthic groups strongly connectin
 
 ```{r glmnet, message=F}
 comp_sub_metrics[,3:29]<-decostand(comp_sub_metrics[,3:29], 'hel') #Use hellinger-transformed data to explain complexity
-library(glmnet)
+
 filter <- function(x, ...) which(colMeans(x == 0) > 0.5)
 sparsity <- function(fraction = 0.7) {
   function(x, ...) which(colMeans(x == 0) > fraction)
@@ -1218,8 +1206,6 @@ Using hellinger-transformed composition to explain standardized complexity. Usin
 
 ```{r tb-RDA}
 par(mfrow=c(1,1))
-library(dplyr)
-
 comp_sub_hel_std<-decostand(comp_sub_hel, 'standardize')
 MetricsRDA_table<-dplyr::select(comp_sub_hel_std,`Arborescent HC`, `Bushy HC`, `Encrusting HC`,
                                 `Foliose HC`, `Massive HC`,
@@ -1360,7 +1346,7 @@ rda_scores<-as.data.frame(rda_sc2)
 rda_scores<-round(rda_scores, 3)
 rda_scores$Groups<-row.names(rda_scores)
 rda_scores<-dplyr::select(rda_scores, Groups, RDA1, RDA2)
-library(gt)
+
 rda_scores_gt<-gt(rda_scores)
 rda_scores_gt
 ###############Check significance of RDA model##############
