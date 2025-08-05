@@ -1,4 +1,4 @@
-## Data from: Benthic drivers of structural complexity in coral reefs across a tropical-subtropical transition zone
+## :coral: Data from: Benthic drivers of structural complexity in coral reefs across a tropical-subtropical transition zone
 
 This README file was generated on 2024/01/18 by Meng-Hsin Morris Wu (tapewormwu@gmail.com). Knit Data_Analysis_Script.Rmd to generate html and extract R code (Latest update on 2024/10/18).
 
@@ -212,3 +212,4 @@ A detailed description of data acquisition and processing can be found in the pu
 * Column D - Reproj_Error: The reprojection error in 3D reconstruction of each site. Pixel is the default unit.
 * Column E - Cont_Error: The control error in 3D reconstruction of each site. Pixel is the default unit.
 * Column F - PLA: The planar area orthomosaic and DEM cover at each site.
+
