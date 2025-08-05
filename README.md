@@ -33,12 +33,11 @@ This README file was generated on 2024/01/18 by Meng-Hsin Morris Wu (tapewormwu@
 
 5. **Recommended citation for this dataset:** Wu M-HM, Ribas-Deulofeu L, Liu C-HE, Nozawa Y, Denis V (2025) Data from: Benthic drivers of structural complexity in coral reefs across a tropical-subtropical transition zone, Dryad, Dataset, https://doi.org/10.5061/dryad.931zcrjw2.
 
+6. **Associated manuscript:** Wu M-HM, Ribas-Deulofeu L, Liu C-HE, Nozawa Y, Denis V (2025) Benthic drivers of structural complexity in coral reefs across a tropical-subtropical transition zone. Frontiers in Marine Science, 12, 1513498. https://doi.org/10.3389/fmars.2025.1513498
 
-***DESCRIPTION OF THE DATA AND FILE STRUCTURE***
+### ***DESCRIPTION OF THE DATA AND FILE STRUCTURE***
 
--------------------------------------------------------------
-
-**DATA & FILE OVERVIEW**
+#### **DATA & FILE OVERVIEW**
 
 *1. Description of dataset*
 
@@ -57,12 +56,12 @@ File 3 coordinates.xlsx; File 3 description: The longitude and latitude of each 
 File 4 model_quality.xlsx; File 4 description: Quality of the 3D models reconstructed from sites. 
 
 
-***METHODOLOGICAL INFORMATION***
+### ***METHODOLOGICAL INFORMATION***
 
 A detailed description of data acquisition and processing can be found in the published manuscript in Frontiers in Marine Science (https://doi.org/10.3389/fmars.2025.1513498).
 
 
-**DATA-SPECIFIC INFORMATION**
+### **DATA-FILE SPECIFIC INFORMATION**
 
 *complexity_metrics.csv*
 
@@ -212,4 +211,5 @@ A detailed description of data acquisition and processing can be found in the pu
 * Column D - Reproj_Error: The reprojection error in 3D reconstruction of each site. Pixel is the default unit.
 * Column E - Cont_Error: The control error in 3D reconstruction of each site. Pixel is the default unit.
 * Column F - PLA: The planar area orthomosaic and DEM cover at each site.
+
 
